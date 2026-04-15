@@ -1,5 +1,3 @@
-# Macclary51-pro.github.io
-LDG Systems offical website
 <!DOCTYPE html>
 <html lang="en">
 <head>
