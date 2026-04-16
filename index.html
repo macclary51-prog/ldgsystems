@@ -93,6 +93,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 20px;
+      position: relative;
     }
 
     .brand {
@@ -251,7 +252,8 @@
     .download-card,
     .contact-card,
     .timeline-card,
-    .community-card {
+    .community-card,
+    .privacy-card {
       background: linear-gradient(180deg, var(--panel), var(--panel-2));
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
@@ -588,6 +590,35 @@
       line-height: 1.7;
     }
 
+    .privacy-card {
+      border-radius: 28px;
+      padding: 28px;
+    }
+
+    .privacy-card h3 {
+      margin: 0 0 14px;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    .privacy-card p,
+    .privacy-card li {
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .privacy-card ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .privacy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
     .contact-card {
       border-radius: 28px;
       padding: 26px;
@@ -682,13 +713,20 @@
       flex-wrap: wrap;
     }
 
+    .footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 1080px) {
       .hero-grid,
       .contact-grid,
       .cards-grid,
       .timeline,
       .community-grid,
-      .downloads-grid {
+      .downloads-grid,
+      .privacy-grid {
         grid-template-columns: 1fr;
       }
 
@@ -772,6 +810,7 @@
         <a href="#downloads">Downloads</a>
         <a href="#roadmap">Roadmap</a>
         <a href="#community">Community</a>
+        <a href="#privacy">Privacy Policy</a>
         <a href="#contact">Contact</a>
       </nav>
 
@@ -998,4 +1037,229 @@
             </div>
 
             <div class="download-actions">
-              <a class="btn btn-primary" href="LDGSystemsAdvancedMonitor_v1.0
+              <a class="btn btn-primary" href="LDGSystemsAdvancedMonitor_v1.0.zip" download>Download ZIP</a>
+              <a class="btn btn-secondary" href="#projects">Read More</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <h2>Roadmap</h2>
+          </div>
+          <p>
+            Show visitors where LDG Systems is going next with upcoming builds, major goals, and long-term plans.
+          </p>
+        </div>
+
+        <div class="timeline">
+          <article class="timeline-card">
+            <div class="step">1</div>
+            <h3>Launch Utilities</h3>
+            <p>Finalize public-facing builds for System Monitor and Advanced Monitor while cleaning up downloads, screenshots, and release details.</p>
+          </article>
+
+          <article class="timeline-card">
+            <div class="step">2</div>
+            <h3>Expand Mobile Tools</h3>
+            <p>Continue building LDG Maps and other Android projects with stronger UI design, larger feature sets, and smarter utility functions.</p>
+          </article>
+
+          <article class="timeline-card">
+            <div class="step">3</div>
+            <h3>Grow the Brand</h3>
+            <p>Expand LDG Systems into a larger technology brand with more apps, desktop tools, game concepts, and future public releases.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="community">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <h2>Community</h2>
+          </div>
+          <p>
+            This section can help you grow an audience now and expand later into forums, release notes, support pages, or a Discord hub.
+          </p>
+        </div>
+
+        <div class="community-grid">
+          <article class="community-card">
+            <h3>Release Updates</h3>
+            <p>Post version notes, progress milestones, bug fixes, and future feature plans so visitors always know what is changing.</p>
+          </article>
+
+          <article class="community-card">
+            <h3>Feedback Hub</h3>
+            <p>Encourage users to send feedback, suggestions, and bug reports so your apps improve faster with real-world input.</p>
+          </article>
+
+          <article class="community-card">
+            <h3>Future Expansion</h3>
+            <p>Add forums, social links, public beta signups, or community-driven support as LDG Systems grows.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <h2>Privacy Policy</h2>
+          </div>
+          <p>
+            This privacy policy covers LDG Systems apps and is suitable for linking in Google Play for System Monitor.
+          </p>
+        </div>
+
+        <div class="privacy-card">
+          <h3>System Monitor Privacy Policy</h3>
+          <p>
+            System Monitor does not collect, store, or share personal user data.
+          </p>
+          <p>
+            Information displayed inside the app, such as battery status, memory usage, storage information, network details, and device information, is processed locally on your device for app functionality.
+          </p>
+          <p>
+            System Monitor does not require user accounts, does not use third-party analytics, and does not sell or transfer user data to outside parties.
+          </p>
+          <p>
+            If certain features access device-level information, that access is used only to display system information and app functions directly on your device.
+          </p>
+
+          <div class="privacy-grid">
+            <div class="contact-box">
+              <small>Data Collection</small>
+              <strong>No personal data collected</strong>
+              <p>No user accounts, no server-side storage, and no third-party sale of data.</p>
+            </div>
+
+            <div class="contact-box">
+              <small>Data Usage</small>
+              <strong>Local device functionality only</strong>
+              <p>Battery, RAM, storage, and network information are used only to display app features on your device.</p>
+            </div>
+
+            <div class="contact-box">
+              <small>Third Parties</small>
+              <strong>No data selling or sharing</strong>
+              <p>LDG Systems does not sell, rent, or share personal user data with third parties.</p>
+            </div>
+
+            <div class="contact-box">
+              <small>Policy Updates</small>
+              <strong>Updates may be posted here</strong>
+              <p>If the privacy policy changes in the future, this page will be updated to reflect the latest version.</p>
+            </div>
+          </div>
+
+          <h3 style="margin-top: 24px;">Contact</h3>
+          <p>
+            If you have any privacy-related questions about System Monitor or other LDG Systems projects, use the contact section below.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <h2>Contact</h2>
+          </div>
+          <p>
+            Keep this section simple for now, then replace placeholder details with your real support email or business contact when ready.
+          </p>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-grid">
+            <div class="contact-info">
+              <div class="contact-box">
+                <small>Brand</small>
+                <strong>LDG Systems</strong>
+                <p>Independent apps, tools, and future technology projects.</p>
+              </div>
+
+              <div class="contact-box">
+                <small>Support</small>
+                <strong>Privacy & App Support</strong>
+                <p>Replace this with your real email address before publishing publicly.</p>
+              </div>
+
+              <div class="contact-box">
+                <small>Website Use</small>
+                <strong>Downloads + Updates</strong>
+                <p>Use this site as your main hub for releases, changelogs, screenshots, and policy pages.</p>
+              </div>
+            </div>
+
+            <form class="contact-form" onsubmit="event.preventDefault(); alert('Form placeholder only. Add your backend or form service later.');">
+              <input type="text" placeholder="Your name" />
+              <input type="email" placeholder="Your email" />
+              <input type="text" placeholder="Subject" class="full" />
+              <textarea rows="7" placeholder="Your message" class="full"></textarea>
+              <button type="submit" class="btn btn-primary full">Send Message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-wrap">
+      <div>© 2026 LDG Systems. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="#projects">Projects</a>
+        <a href="#downloads">Downloads</a>
+        <a href="#privacy">Privacy Policy</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const navToggle = document.getElementById("navToggle");
+    const navLinks = document.getElementById("navLinks");
+
+    navToggle.addEventListener("click", () => {
+      navLinks.classList.toggle("open");
+    });
+
+    document.querySelectorAll(".nav-links a").forEach(link => {
+      link.addEventListener("click", () => {
+        navLinks.classList.remove("open");
+      });
+    });
+
+    const sections = document.querySelectorAll("section[id]");
+    const navAnchors = document.querySelectorAll(".nav-links a");
+
+    window.addEventListener("scroll", () => {
+      let current = "";
+      sections.forEach(section => {
+        const top = section.offsetTop - 120;
+        const height = section.offsetHeight;
+        if (window.scrollY >= top && window.scrollY < top + height) {
+          current = section.getAttribute("id");
+        }
+      });
+
+      navAnchors.forEach(link => {
+        link.classList.remove("active");
+        if (link.getAttribute("href") === `#${current}`) {
+          link.classList.add("active");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
