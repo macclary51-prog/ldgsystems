@@ -946,8 +946,7 @@
             <h2>Downloads</h2>
           </div>
           <p>
-            These cards are ready for real links. Put this HTML file and your ZIP files in the same folder so the
-            download buttons work correctly.
+            Download your current public builds here.
           </p>
         </div>
 
@@ -1037,12 +1036,7 @@
             </div>
 
             <div class="download-actions">
-              <a
-                class="btn btn-primary download-btn"
-                href="./LDGSystemsAdvancedMonitor_v1.0.zip"
-                download="LDGSystemsAdvancedMonitor_v1.0.zip"
-                data-file="./LDGSystemsAdvancedMonitor_v1.0.zip"
-              >Download ZIP</a>
+              <a class="btn btn-primary" href="/LDGSystemsAdvancedMonitor_v1.0.zip(1).zip" download="LDGSystemsAdvancedMonitor_v1.0.zip(1).zip">Download ZIP</a>
               <a class="btn btn-secondary" href="#projects">Read More</a>
             </div>
           </article>
@@ -1262,24 +1256,6 @@
         link.classList.remove("active");
         if (link.getAttribute("href") === `#${current}`) {
           link.classList.add("active");
-        }
-      });
-    });
-
-    document.querySelectorAll(".download-btn").forEach(button => {
-      button.addEventListener("click", async (event) => {
-        const file = button.getAttribute("data-file");
-        if (!file) return;
-
-        try {
-          const response = await fetch(file, { method: "HEAD" });
-          if (!response.ok) {
-            event.preventDefault();
-            alert("ZIP file not found. Make sure LDGSystemsAdvancedMonitor_v1.0.zip is uploaded in the same folder as this HTML file.");
-          }
-        } catch (error) {
-          event.preventDefault();
-          alert("Could not access the ZIP file. Make sure the file path is correct and the ZIP is hosted with the website.");
         }
       });
     });
