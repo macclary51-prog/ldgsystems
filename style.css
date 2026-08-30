@@ -883,6 +883,10 @@ p {
     padding: 0;
 }
 
+.portfolio-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .project-image {
     display: grid;
     min-height: 185px;
@@ -910,6 +914,22 @@ p {
 
 .project-content {
     padding: 25px;
+}
+
+.project-content h4 {
+    margin-top: 26px;
+    color: #edf4fb;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+}
+
+.project-content .feature-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-credit {
+    margin-top: 30px;
+    color: var(--silver-light);
 }
 
 .project-label {
@@ -1307,6 +1327,10 @@ footer {
     .steps,
     .feature-panel-grid,
     .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .project-content .feature-list {
         grid-template-columns: 1fr;
     }
 
