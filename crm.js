@@ -11,10 +11,12 @@ import {
 
 import {
     collection,
-    deleteDoc,
     doc,
     getDoc,
+    getDocs,
     onSnapshot,
+    orderBy,
+    query,
     serverTimestamp,
     updateDoc,
     writeBatch
@@ -31,11 +33,22 @@ const statusLabels = {
     "lost": "Lost"
 };
 
-const validStatuses =
-    new Set(Object.keys(statusLabels));
+const emailTemplateLabels = {
+    "initial-response": "Initial Response",
+    "request-information": "Request More Information",
+    "send-quote": "Send Quote",
+    "follow-up": "Follow Up",
+    "quote-accepted": "Quote Accepted",
+    "request-content": "Request Project Content",
+    "progress-update": "Project Progress Update",
+    "project-completed": "Project Completed",
+    "custom": "Custom Message"
+};
 
-// Keep the customer-facing business signature easy to update in one place.
-const EMAIL_SIGNATURE = [
+const validStatuses = new Set(Object.keys(statusLabels));
+const validEmailTemplates = new Set(Object.keys(emailTemplateLabels));
+
+const businessSignature = [
     "Best regards,",
     "",
     "Michael Macclary",
@@ -43,143 +56,73 @@ const EMAIL_SIGNATURE = [
     "App Development • Website Development • Digital Services"
 ].join("\n");
 
-const emailTemplateLabels = {
-    "initial-response": "Initial Response",
-    "request-more-information": "Request More Information",
-    "send-quote": "Send Quote",
-    "follow-up": "Follow Up",
-    "quote-accepted": "Quote Accepted",
-    "request-project-content": "Request Project Content",
-    "project-progress-update": "Project Progress Update",
-    "project-completed": "Project Completed",
-    "custom-message": "Custom Message"
-};
+const accessGate = document.getElementById("accessGate");
+const accessMessage = document.getElementById("accessMessage");
+const crmApp = document.getElementById("crmApp");
+const adminEmail = document.getElementById("adminEmail");
+const signOutButton = document.getElementById("signOutButton");
 
-const validEmailTemplates =
-    new Set(Object.keys(emailTemplateLabels));
+const leadSearch = document.getElementById("leadSearch");
+const statusFilter = document.getElementById("statusFilter");
+const leadResultCount = document.getElementById("leadResultCount");
+const leadListStatus = document.getElementById("leadListStatus");
+const leadList = document.getElementById("leadList");
 
-const accessGate =
-    document.getElementById("accessGate");
+const createdAccountsCard = document.getElementById("createdAccountsCard");
+const createdAccountsCount = document.getElementById("createdAccountsCount");
+const accountsSection = document.getElementById("accountsSection");
+const accountSearch = document.getElementById("accountSearch");
+const accountRoleFilter = document.getElementById("accountRoleFilter");
+const accountResultCount = document.getElementById("accountResultCount");
+const accountListStatus = document.getElementById("accountListStatus");
+const accountTableBody = document.getElementById("accountTableBody");
+const accountCardList = document.getElementById("accountCardList");
 
-const accessMessage =
-    document.getElementById("accessMessage");
+const leadDialog = document.getElementById("leadDialog");
+const closeLeadDialog = document.getElementById("closeLeadDialog");
+const leadDialogTitle = document.getElementById("leadDialogTitle");
+const callLead = document.getElementById("callLead");
+const emailLead = document.getElementById("emailLead");
 
-const crmApp =
-    document.getElementById("crmApp");
+const leadForm = document.getElementById("leadForm");
+const leadStatus = document.getElementById("leadStatus");
+const quoteAmount = document.getElementById("quoteAmount");
+const followUpDate = document.getElementById("followUpDate");
+const internalNotes = document.getElementById("internalNotes");
+const leadFormStatus = document.getElementById("leadFormStatus");
+const updateLeadButton = document.getElementById("updateLeadButton");
+const deleteLeadButton = document.getElementById("deleteLeadButton");
 
-const adminEmail =
-    document.getElementById("adminEmail");
-
-const signOutButton =
-    document.getElementById("signOutButton");
-
-const leadSearch =
-    document.getElementById("leadSearch");
-
-const statusFilter =
-    document.getElementById("statusFilter");
-
-const leadResultCount =
-    document.getElementById("leadResultCount");
-
-const leadListStatus =
-    document.getElementById("leadListStatus");
-
-const leadList =
-    document.getElementById("leadList");
-
-const leadDialog =
-    document.getElementById("leadDialog");
-
-const closeLeadDialog =
-    document.getElementById("closeLeadDialog");
-
-const leadDialogTitle =
-    document.getElementById("leadDialogTitle");
-
-const callLead =
-    document.getElementById("callLead");
-
-const emailLead =
-    document.getElementById("emailLead");
-
-const leadForm =
-    document.getElementById("leadForm");
-
-const leadStatus =
-    document.getElementById("leadStatus");
-
-const quoteAmount =
-    document.getElementById("quoteAmount");
-
-const followUpDate =
-    document.getElementById("followUpDate");
-
-const internalNotes =
-    document.getElementById("internalNotes");
-
-const leadFormStatus =
-    document.getElementById("leadFormStatus");
-
-const updateLeadButton =
-    document.getElementById("updateLeadButton");
-
-const deleteLeadButton =
-    document.getElementById("deleteLeadButton");
-
-const emailTemplate =
-    document.getElementById("emailTemplate");
-
-const emailSubject =
-    document.getElementById("emailSubject");
-
-const emailMessage =
-    document.getElementById("emailMessage");
-
-const generateEmailButton =
-    document.getElementById("generateEmailButton");
-
-const copyEmailButton =
-    document.getElementById("copyEmailButton");
-
-const openEmailButton =
-    document.getElementById("openEmailButton");
-
-const markEmailSentButton =
-    document.getElementById("markEmailSentButton");
-
-const emailStatus =
-    document.getElementById("emailStatus");
-
-const communicationHistoryStatus =
-    document.getElementById("communicationHistoryStatus");
-
-const communicationHistoryList =
-    document.getElementById("communicationHistoryList");
+const customerEmailSection = document.getElementById("customerEmailSection");
+const emailRecipient = document.getElementById("emailRecipient");
+const emailTemplate = document.getElementById("emailTemplate");
+const generateEmailButton = document.getElementById("generateEmailButton");
+const emailSubject = document.getElementById("emailSubject");
+const emailMessage = document.getElementById("emailMessage");
+const emailStatus = document.getElementById("emailStatus");
+const copyEmailButton = document.getElementById("copyEmailButton");
+const openEmailButton = document.getElementById("openEmailButton");
+const markEmailSentButton = document.getElementById("markEmailSentButton");
+const communicationHistoryStatus = document.getElementById("communicationHistoryStatus");
+const communicationHistory = document.getElementById("communicationHistory");
 
 let leads = [];
+let accounts = [];
 let selectedLeadId = "";
 let unsubscribeLeads = null;
+let unsubscribeAccounts = null;
 let unsubscribeCommunications = null;
 let authorizedUid = "";
 let pendingRedirectReason = "";
 
-
 function redirectToLogin(reason = "") {
-    const query = reason
-        ? `?reason=${encodeURIComponent(reason)}`
-        : "";
-
-    window.location.replace(
-        `crm-login.html${query}`
-    );
+    const search = reason ? `?reason=${encodeURIComponent(reason)}` : "";
+    window.location.replace(`crm-login.html${search}`);
 }
-
 
 function setAccessMessage(message) {
     accessMessage.textContent = message;
 }
-
 
 function setLeadListStatus(message, state = "") {
     leadListStatus.textContent = message;
@@ -187,566 +130,157 @@ function setLeadListStatus(message, state = "") {
     leadListStatus.hidden = !message;
 }
 
+function setAccountListStatus(message, state = "") {
+    accountListStatus.textContent = message;
+    accountListStatus.dataset.state = state;
+    accountListStatus.hidden = !message;
+}
 
 function setLeadFormStatus(message, state = "") {
     leadFormStatus.textContent = message;
     leadFormStatus.dataset.state = state;
 }
 
-
 function setEmailStatus(message, state = "") {
     emailStatus.textContent = message;
     emailStatus.dataset.state = state;
 }
 
-
-function setCommunicationHistoryStatus(
-    message,
-    state = ""
-) {
+function setCommunicationStatus(message, state = "") {
     communicationHistoryStatus.textContent = message;
     communicationHistoryStatus.dataset.state = state;
     communicationHistoryStatus.hidden = !message;
 }
 
-
-function getSelectedLead() {
-    return leads.find(function (lead) {
-        return lead.id === selectedLeadId;
-    }) || null;
-}
-
-
-function getFirstName(name) {
-    const normalizedName = String(
-        name || ""
-    ).trim();
-
-    return normalizedName
-        ? normalizedName.split(/\s+/)[0]
-        : "there";
-}
-
-
-function getProjectSummary(message) {
-    const normalizedMessage = String(
-        message || ""
-    ).replace(/\s+/g, " ").trim();
-
-    if (normalizedMessage.length <= 360) {
-        return normalizedMessage;
-    }
-
-    return `${normalizedMessage.slice(0, 357).trimEnd()}...`;
-}
-
-
-function formatFollowUpDate(value) {
-    const parts = String(value || "").split("-");
-
-    if (parts.length !== 3) {
-        return "";
-    }
-
-    const year = Number(parts[0]);
-    const month = Number(parts[1]);
-    const day = Number(parts[2]);
-    const date = new Date(year, month - 1, day);
-
-    if (
-        !Number.isInteger(year) ||
-        !Number.isInteger(month) ||
-        !Number.isInteger(day) ||
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        return "";
-    }
-
-    return new Intl.DateTimeFormat(
-        undefined,
-        { dateStyle: "long" }
-    ).format(date);
-}
-
-
-function getCurrentQuoteAmount() {
-    const value = quoteAmount.value.trim();
-
-    if (!value) {
-        return null;
-    }
-
-    const amount = Number(value);
-
-    return (
-        Number.isFinite(amount) &&
-        amount >= 0 &&
-        amount <= 100000000
-    )
-        ? amount
-        : null;
-}
-
-
-function isValidEmailAddress(value) {
-    const email = String(value || "").trim();
-
-    return (
-        email.length <= 254 &&
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    );
-}
-
-
-function getEmailDraft() {
-    return {
-        template: emailTemplate.value,
-        subject: emailSubject.value.trim(),
-        body: emailMessage.value
-    };
-}
-
-
-function validateEmailDraft({ requireRecipient = false } = {}) {
-    const lead = getSelectedLead();
-
-    if (!lead) {
-        return {
-            error: "No lead is selected. Open a lead before working with customer email."
-        };
-    }
-
-    const draft = getEmailDraft();
-
-    if (!validEmailTemplates.has(draft.template)) {
-        return {
-            error: "Choose a valid email template."
-        };
-    }
-
-    if (!draft.subject) {
-        return {
-            error: "Enter an email subject before continuing."
-        };
-    }
-
-    if (draft.subject.length > 998) {
-        return {
-            error: "The email subject is too long."
-        };
-    }
-
-    if (!draft.body.trim()) {
-        return {
-            error: "Enter an email message before continuing."
-        };
-    }
-
-    if (draft.body.length > 20000) {
-        return {
-            error: "The email message is too long."
-        };
-    }
-
-    const recipient = String(
-        lead.email || ""
-    ).trim();
-
-    if (
-        requireRecipient &&
-        !isValidEmailAddress(recipient)
-    ) {
-        return {
-            error: recipient
-                ? "The customer email address is invalid. Update the lead before opening or recording an email."
-                : "This lead does not have a customer email address."
-        };
-    }
-
-    return {
-        lead,
-        recipient,
-        ...draft
-    };
-}
-
-
-function describeFirestoreError(error, action) {
-    if (error?.code === "permission-denied") {
-        return `${action} was blocked by Firestore. Confirm that your administrator role is active and the latest rules are deployed.`;
-    }
-
-    if (
-        error?.code === "unavailable" ||
-        error?.code === "deadline-exceeded"
-    ) {
-        return `${action} could not be completed because the network is unavailable. Check your connection and try again.`;
-    }
-
-    return `${action} could not be completed. Check your connection and administrator access, then try again.`;
-}
-
-
 function timestampToMillis(timestamp) {
-    if (
-        timestamp &&
-        typeof timestamp.toMillis === "function"
-    ) {
+    if (timestamp && typeof timestamp.toMillis === "function") {
         return timestamp.toMillis();
     }
-
     return 0;
 }
 
-
 function formatDateTime(timestamp) {
-    if (
-        !timestamp ||
-        typeof timestamp.toDate !== "function"
-    ) {
+    if (!timestamp || typeof timestamp.toDate !== "function") {
         return "Pending";
     }
 
-    return new Intl.DateTimeFormat(
-        undefined,
-        {
-            dateStyle: "medium",
-            timeStyle: "short"
-        }
-    ).format(timestamp.toDate());
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+    }).format(timestamp.toDate());
 }
 
+function formatAccountDate(timestamp) {
+    if (!timestamp || typeof timestamp.toDate !== "function") {
+        return "Unknown";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium"
+    }).format(timestamp.toDate());
+}
 
 function formatCurrency(value) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
+    if (value === null || value === undefined || value === "") {
         return "Not set";
     }
 
-    return new Intl.NumberFormat(
-        undefined,
-        {
-            style: "currency",
-            currency: "USD"
-        }
-    ).format(Number(value));
-}
+    const number = Number(value);
 
-
-function addEmailSignature(message) {
-    return `${message}\n\n${EMAIL_SIGNATURE}`;
-}
-
-
-function createEmailFromTemplate(template, lead) {
-    const firstName = getFirstName(lead.name);
-    const business = String(
-        lead.business || ""
-    ).trim();
-    const service = String(
-        lead.service || ""
-    ).trim() || "your project";
-    const projectSummary =
-        getProjectSummary(lead.message);
-    const businessContext = business
-        ? ` for ${business}`
-        : "";
-    const projectReference = projectSummary
-        ? `\n\nProject request: ${projectSummary}`
-        : "";
-    const quote = getCurrentQuoteAmount();
-    const formattedFollowUpDate =
-        formatFollowUpDate(followUpDate.value);
-
-    switch (template) {
-        case "initial-response":
-            return {
-                subject: "Thank You for Contacting SilverForge Digital Solutions",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nThank you for contacting SilverForge Digital Solutions about ${service}${businessContext}. We received your project request and will review the details carefully.${projectReference}\n\nAfter our review, we will follow up with the next steps. We may have a few questions to make sure we fully understand what you need.\n\nThank you again for the opportunity to learn about your project.`
-                )
-            };
-
-        case "request-more-information":
-            return {
-                subject: "Additional Information Needed for Your Project",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nThank you for sharing the details of your ${service} project${businessContext}. To make sure we understand your requirements and can plan accurately, we need a little more information.${projectReference}\n\nQuestions:\n- [Add question here]\n- [Add question here]\n\nPlease reply whenever it is convenient, and feel free to include any other details that may help us understand the project.`
-                )
-            };
-
-        case "send-quote":
-            if (quote === null) {
-                return {
-                    error: "Add a valid quote amount to the lead before generating the Send Quote email."
-                };
-            }
-
-            return {
-                subject: "Your SilverForge Project Quote",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nThank you for the opportunity to prepare a quote for your ${service} project${businessContext}. Based on the project requirements we have discussed, the current quote is ${formatCurrency(quote)}.\n\nThis quote reflects the scope and details currently available. If you have questions, would like clarification, or want to discuss changes to the project requirements, please let us know.\n\nWe look forward to hearing from you.`
-                )
-            };
-
-        case "follow-up":
-            return {
-                subject: "Following Up on Your SilverForge Project",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nI wanted to follow up${formattedFollowUpDate ? ` as planned for ${formattedFollowUpDate}` : ""} about your ${service} project${businessContext}.${projectReference}\n\nWould you still like to continue with the project? If you have any questions or if your needs have changed, please let us know. We would be happy to help.\n\nWe look forward to hearing from you.`
-                )
-            };
-
-        case "quote-accepted":
-            if (quote === null) {
-                return {
-                    error: "Add the accepted quote amount to the lead before generating the Quote Accepted email."
-                };
-            }
-
-            return {
-                subject: "SilverForge Project Confirmation",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nThank you for accepting the ${formatCurrency(quote)} quote for your ${service} project${businessContext}. We appreciate the opportunity to work with you.\n\nYour project is confirmed. We will be in touch to discuss the next steps, schedule, and any content or access we need to begin.\n\nWe look forward to bringing your project to life.`
-                )
-            };
-
-        case "request-project-content":
-            return {
-                subject: "Content Needed for Your SilverForge Project",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nTo keep your ${service} project moving forward, we need the following content and information from you:\n\nContent checklist:\n- [Add requested text or business information]\n- [Add requested photos, graphics, or logo files]\n- [Add any non-sensitive account details or access instructions]\n- [Add other project-specific items]\n\nYou may send the items that apply to your project when they are ready. For your security, please never send passwords by email. We can arrange a safer way to handle any access that is required.\n\nPlease let us know if you have questions about any item on the list.`
-                )
-            };
-
-        case "project-progress-update":
-            return {
-                subject: "Update on Your SilverForge Project",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nHere is the latest update on your ${service} project${businessContext}.\n\nCurrent progress:\n[Add current progress here]\n\nNext steps:\n[Add next steps and any customer action needed here]\n\nPlease let us know if you have any questions about this update.`
-                )
-            };
-
-        case "project-completed":
-            return {
-                subject: "Your SilverForge Project Is Complete",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\nYour ${service} project${businessContext} is complete. Thank you for choosing SilverForge Digital Solutions and for working with us throughout the project.\n\nDelivery details or next steps:\n[Add delivery information, launch details, or next steps here]\n\nIf you need support or have any questions after delivery, please contact us. We will be glad to help.`
-                )
-            };
-
-        case "custom-message":
-            return {
-                subject: "A Message from SilverForge Digital Solutions",
-                body: addEmailSignature(
-                    `Hi ${firstName},\n\n[Write your customer message here]`
-                )
-            };
-
-        default:
-            return {
-                error: "Choose a valid email template."
-            };
+    if (!Number.isFinite(number)) {
+        return "Not set";
     }
+
+    return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: "USD"
+    }).format(number);
 }
 
+function getSelectedLead() {
+    return leads.find((lead) => lead.id === selectedLeadId) || null;
+}
 
-function createCommunicationMetaItem(label, value) {
+function getFirstName(name) {
+    const cleanedName = String(name || "").trim();
+    return cleanedName ? cleanedName.split(/\s+/)[0] : "there";
+}
+
+function isValidEmailAddress(value) {
+    const email = String(value || "").trim();
+    return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function setDetailText(id, value) {
+    const element = document.getElementById(id);
+    element.textContent = String(value || "").trim() || "Not provided";
+}
+
+function createMetaItem(label, value) {
     const item = document.createElement("div");
     const itemLabel = document.createElement("span");
     const itemValue = document.createElement("strong");
 
     itemLabel.textContent = label;
     itemValue.textContent = value;
-    item.append(itemLabel, itemValue);
 
+    item.append(itemLabel, itemValue);
     return item;
 }
 
-
-function renderCommunications(communications) {
-    communicationHistoryList.replaceChildren();
-
-    if (!communications.length) {
-        setCommunicationHistoryStatus(
-            "No customer emails have been marked as sent yet."
-        );
-        return;
-    }
-
-    setCommunicationHistoryStatus("");
-
-    communications.forEach(function (communication) {
-        const record = document.createElement("article");
-        const subject = document.createElement("h5");
-        const meta = document.createElement("div");
-        const details = document.createElement("details");
-        const summary = document.createElement("summary");
-        const body = document.createElement("pre");
-
-        record.className = "crm-communication-record";
-        subject.textContent = `Subject: ${
-            communication.subject || "No subject"
-        }`;
-        meta.className = "crm-communication-meta";
-
-        meta.append(
-            createCommunicationMetaItem(
-                "Template",
-                emailTemplateLabels[communication.template] ||
-                    communication.template ||
-                    "Unknown"
-            ),
-            createCommunicationMetaItem(
-                "Recipient",
-                communication.recipient || "Not recorded"
-            ),
-            createCommunicationMetaItem(
-                "Marked sent",
-                formatDateTime(communication.markedSentAt)
-            )
-        );
-
-        summary.textContent = "View full email";
-        body.textContent = communication.body || "";
-        details.append(summary, body);
-        record.append(subject, meta, details);
-        communicationHistoryList.appendChild(record);
-    });
+function normalizeAccountName(account) {
+    return String(
+        account.displayName ||
+        account.name ||
+        account.fullName ||
+        account.ownerName ||
+        ""
+    ).trim() || "Name not provided";
 }
 
-
-function stopCommunicationSubscription() {
-    if (unsubscribeCommunications) {
-        unsubscribeCommunications();
-        unsubscribeCommunications = null;
-    }
+function normalizeAccountRole(account) {
+    return String(account.role || account.accountType || "customer")
+        .trim()
+        .toLowerCase() || "customer";
 }
 
+function normalizeAccountStatus(account) {
+    if (account.active === false) return "inactive";
 
-function subscribeToCommunications(leadId) {
-    stopCommunicationSubscription();
-    communicationHistoryList.replaceChildren();
-    setCommunicationHistoryStatus(
-        "Loading communication history..."
-    );
+    const value = String(
+        account.status ||
+        account.accountStatus ||
+        account.platformStatus ||
+        ""
+    ).trim().toLowerCase();
 
-    unsubscribeCommunications = onSnapshot(
-        collection(
-            db,
-            "leads",
-            leadId,
-            "communications"
-        ),
-        function (snapshot) {
-            if (selectedLeadId !== leadId) {
-                return;
-            }
-
-            const communications = snapshot.docs
-                .map(function (communicationDocument) {
-                    return {
-                        id: communicationDocument.id,
-                        ...communicationDocument.data()
-                    };
-                })
-                .sort(function (a, b) {
-                    return (
-                        timestampToMillis(b.markedSentAt) -
-                        timestampToMillis(a.markedSentAt)
-                    );
-                });
-
-            renderCommunications(communications);
-        },
-        function (error) {
-            if (selectedLeadId !== leadId) {
-                return;
-            }
-
-            console.error(
-                "Communication subscription failed:",
-                error
-            );
-            communicationHistoryList.replaceChildren();
-            setCommunicationHistoryStatus(
-                describeFirestoreError(
-                    error,
-                    "Communication history"
-                ),
-                "error"
-            );
-        }
-    );
+    if (!value) return "active";
+    return value;
 }
-
-
-function setDetailText(id, value) {
-    const element =
-        document.getElementById(id);
-
-    element.textContent =
-        String(value || "").trim() || "Not provided";
-}
-
-
-function createMetaItem(label, value) {
-    const item =
-        document.createElement("div");
-
-    const itemLabel =
-        document.createElement("span");
-
-    const itemValue =
-        document.createElement("strong");
-
-    itemLabel.textContent = label;
-    itemValue.textContent = value;
-
-    item.append(itemLabel, itemValue);
-
-    return item;
-}
-
 
 function getFilteredLeads() {
-    const query =
-        leadSearch.value.trim().toLowerCase();
+    const searchText = leadSearch.value.trim().toLowerCase();
+    const selectedStatus = statusFilter.value;
 
-    const selectedStatus =
-        statusFilter.value;
+    return leads.filter((lead) => {
+        const matchesStatus = selectedStatus === "all" || lead.status === selectedStatus;
 
-    return leads.filter(function (lead) {
-        const matchesStatus =
-            selectedStatus === "all" ||
-            lead.status === selectedStatus;
+        if (!matchesStatus) return false;
+        if (!searchText) return true;
 
-        if (!matchesStatus) {
-            return false;
-        }
-
-        if (!query) {
-            return true;
-        }
-
-        const searchableText = [
+        return [
             lead.name,
             lead.business,
             lead.email,
             lead.phone,
             lead.service,
             lead.message
-        ].join(" ").toLowerCase();
-
-        return searchableText.includes(query);
+        ]
+            .join(" ")
+            .toLowerCase()
+            .includes(searchText);
     });
 }
-
 
 function updateSummary() {
     const counts = {
@@ -757,45 +291,25 @@ function updateSummary() {
         "completed": 0
     };
 
-    leads.forEach(function (lead) {
-        if (
-            Object.prototype.hasOwnProperty.call(
-                counts,
-                lead.status
-            )
-        ) {
+    leads.forEach((lead) => {
+        if (Object.prototype.hasOwnProperty.call(counts, lead.status)) {
             counts[lead.status] += 1;
         }
     });
 
-    document.getElementById("totalLeads").textContent =
-        String(leads.length);
-
-    document.getElementById("newLeads").textContent =
-        String(counts["new"]);
-
-    document.getElementById("quotesSent").textContent =
-        String(counts["quote-sent"]);
-
-    document.getElementById("acceptedProjects").textContent =
-        String(counts["accepted"]);
-
-    document.getElementById("inProgressProjects").textContent =
-        String(counts["in-progress"]);
-
-    document.getElementById("completedProjects").textContent =
-        String(counts["completed"]);
+    document.getElementById("totalLeads").textContent = String(leads.length);
+    document.getElementById("newLeads").textContent = String(counts["new"]);
+    document.getElementById("quotesSent").textContent = String(counts["quote-sent"]);
+    document.getElementById("acceptedProjects").textContent = String(counts["accepted"]);
+    document.getElementById("inProgressProjects").textContent = String(counts["in-progress"]);
+    document.getElementById("completedProjects").textContent = String(counts["completed"]);
 }
 
-
 function renderLeadList() {
-    const filteredLeads =
-        getFilteredLeads();
+    const filteredLeads = getFilteredLeads();
 
     leadList.replaceChildren();
-
-    leadResultCount.textContent =
-        `${filteredLeads.length} of ${leads.length} leads`;
+    leadResultCount.textContent = `${filteredLeads.length} of ${leads.length} leads`;
 
     if (!filteredLeads.length) {
         setLeadListStatus(
@@ -803,155 +317,317 @@ function renderLeadList() {
                 ? "No leads match the current search and filter."
                 : "No quote requests have been submitted yet."
         );
-
         return;
     }
 
     setLeadListStatus("");
 
-    filteredLeads.forEach(function (lead) {
-        const card =
-            document.createElement("article");
-
+    filteredLeads.forEach((lead) => {
+        const card = document.createElement("article");
         card.className = "crm-lead-card";
         card.setAttribute("role", "listitem");
 
-        const cardHeader =
-            document.createElement("div");
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "crm-lead-card-header";
 
-        cardHeader.className =
-            "crm-lead-card-header";
+        const identity = document.createElement("div");
+        const name = document.createElement("h3");
+        const business = document.createElement("p");
 
-        const identity =
-            document.createElement("div");
-
-        const name =
-            document.createElement("h3");
-
-        const business =
-            document.createElement("p");
-
-        name.textContent =
-            lead.name || "Unnamed lead";
-
-        business.textContent =
-            lead.business || "No business provided";
+        name.textContent = lead.name || "Unnamed lead";
+        business.textContent = lead.business || "No business provided";
 
         identity.append(name, business);
 
-        const badge =
-            document.createElement("span");
-
-        badge.className =
-            `crm-status-badge crm-status-${lead.status}`;
-
-        badge.textContent =
-            statusLabels[lead.status] || "Unknown";
+        const badge = document.createElement("span");
+        badge.className = `crm-status-badge crm-status-${lead.status}`;
+        badge.textContent = statusLabels[lead.status] || "Unknown";
 
         cardHeader.append(identity, badge);
 
-        const meta =
-            document.createElement("div");
-
+        const meta = document.createElement("div");
         meta.className = "crm-lead-meta";
-
         meta.append(
-            createMetaItem(
-                "Service",
-                lead.service || "Not provided"
-            ),
-            createMetaItem(
-                "Submitted",
-                formatDateTime(lead.createdAt)
-            ),
-            createMetaItem(
-                "Quote",
-                formatCurrency(lead.quoteAmount)
-            ),
-            createMetaItem(
-                "Follow-up",
-                lead.followUpDate || "Not set"
-            )
+            createMetaItem("Service", lead.service || "Not provided"),
+            createMetaItem("Submitted", formatDateTime(lead.createdAt)),
+            createMetaItem("Quote", formatCurrency(lead.quoteAmount)),
+            createMetaItem("Follow-up", lead.followUpDate || "Not set")
         );
 
-        const contact =
-            document.createElement("p");
+        const contact = document.createElement("p");
+        contact.className = "crm-lead-contact";
+        contact.textContent = [lead.email, lead.phone].filter(Boolean).join(" • ");
 
-        contact.className =
-            "crm-lead-contact";
-
-        contact.textContent = [
-            lead.email,
-            lead.phone
-        ].filter(Boolean).join(" • ");
-
-        const viewButton =
-            document.createElement("button");
-
-        viewButton.className =
-            "crm-primary-button crm-view-button";
-
+        const viewButton = document.createElement("button");
+        viewButton.className = "crm-primary-button crm-view-button";
         viewButton.type = "button";
         viewButton.textContent = "View and manage";
+        viewButton.addEventListener("click", () => openLead(lead.id));
 
-        viewButton.addEventListener(
-            "click",
-            function () {
-                openLead(lead.id);
-            }
-        );
-
-        card.append(
-            cardHeader,
-            meta,
-            contact,
-            viewButton
-        );
-
+        card.append(cardHeader, meta, contact, viewButton);
         leadList.appendChild(card);
     });
 }
 
+function populateAccountRoleFilter() {
+    const current = accountRoleFilter.value || "all";
+    const roles = [...new Set(accounts.map(normalizeAccountRole))].sort();
 
-function closeDialog() {
-    stopCommunicationSubscription();
-    selectedLeadId = "";
-    setLeadFormStatus("");
-    setEmailStatus("");
+    accountRoleFilter.replaceChildren();
+
+    const allOption = document.createElement("option");
+    allOption.value = "all";
+    allOption.textContent = "All roles";
+    accountRoleFilter.appendChild(allOption);
+
+    roles.forEach((role) => {
+        const option = document.createElement("option");
+        option.value = role;
+        option.textContent = role
+            .replaceAll("-", " ")
+            .replace(/\b\w/g, (character) => character.toUpperCase());
+        accountRoleFilter.appendChild(option);
+    });
+
+    accountRoleFilter.value = roles.includes(current) ? current : "all";
+}
+
+function getFilteredAccounts() {
+    const searchText = accountSearch.value.trim().toLowerCase();
+    const selectedRole = accountRoleFilter.value;
+
+    return accounts.filter((account) => {
+        const role = normalizeAccountRole(account);
+
+        if (selectedRole !== "all" && role !== selectedRole) {
+            return false;
+        }
+
+        if (!searchText) return true;
+
+        return [
+            normalizeAccountName(account),
+            account.email,
+            role,
+            account.businessId,
+            normalizeAccountStatus(account)
+        ]
+            .join(" ")
+            .toLowerCase()
+            .includes(searchText);
+    });
+}
+
+function makeAccountStatusBadge(status) {
+    const span = document.createElement("span");
+    span.className = "crm-account-status";
+
+    if (["inactive", "disabled", "suspended", "canceled"].includes(status)) {
+        span.classList.add("crm-account-status-inactive");
+    } else if (["pending", "setup_required", "past_due"].includes(status)) {
+        span.classList.add("crm-account-status-warning");
+    } else {
+        span.classList.add("crm-account-status-active");
+    }
+
+    span.textContent = status.replaceAll("_", " ");
+    return span;
+}
+
+function renderAccounts() {
+    const filteredAccounts = getFilteredAccounts();
+
+    createdAccountsCount.textContent = String(accounts.length);
+    accountResultCount.textContent = `${filteredAccounts.length} of ${accounts.length} accounts`;
+
+    accountTableBody.replaceChildren();
+    accountCardList.replaceChildren();
+
+    if (!filteredAccounts.length) {
+        setAccountListStatus(
+            accounts.length
+                ? "No accounts match the current search and filter."
+                : "No account profile documents were found."
+        );
+        return;
+    }
+
+    setAccountListStatus("");
+
+    filteredAccounts.forEach((account) => {
+        const name = normalizeAccountName(account);
+        const email = String(account.email || "No email");
+        const role = normalizeAccountRole(account);
+        const status = normalizeAccountStatus(account);
+        const businessId = String(account.businessId || "—");
+        const created = formatAccountDate(account.createdAt);
+
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        const emailCell = document.createElement("td");
+        const roleCell = document.createElement("td");
+        const statusCell = document.createElement("td");
+        const businessCell = document.createElement("td");
+        const createdCell = document.createElement("td");
+
+        nameCell.textContent = name;
+        emailCell.textContent = email;
+        roleCell.textContent = role.replaceAll("-", " ");
+        statusCell.appendChild(makeAccountStatusBadge(status));
+        businessCell.textContent = businessId;
+        createdCell.textContent = created;
+
+        row.append(
+            nameCell,
+            emailCell,
+            roleCell,
+            statusCell,
+            businessCell,
+            createdCell
+        );
+
+        accountTableBody.appendChild(row);
+
+        const card = document.createElement("article");
+        card.className = "crm-account-card";
+        card.setAttribute("role", "listitem");
+
+        const top = document.createElement("div");
+        top.className = "crm-account-card-top";
+
+        const identity = document.createElement("div");
+        const heading = document.createElement("h3");
+        const emailText = document.createElement("p");
+
+        heading.textContent = name;
+        emailText.textContent = email;
+        identity.append(heading, emailText);
+
+        top.append(identity, makeAccountStatusBadge(status));
+
+        const meta = document.createElement("div");
+        meta.className = "crm-account-card-meta";
+        meta.append(
+            createMetaItem("Role", role.replaceAll("-", " ")),
+            createMetaItem("Business ID", businessId),
+            createMetaItem("Created", created)
+        );
+
+        card.append(top, meta);
+        accountCardList.appendChild(card);
+    });
+}
+
+function clearEmailEditor() {
     emailTemplate.value = "initial-response";
     emailSubject.value = "";
     emailMessage.value = "";
-    communicationHistoryList.replaceChildren();
-    setCommunicationHistoryStatus(
-        "Select a lead to load customer communications."
-    );
+    emailRecipient.textContent = "No email provided";
+    setEmailStatus("");
+}
+
+function stopCommunicationSubscription() {
+    if (unsubscribeCommunications) {
+        unsubscribeCommunications();
+        unsubscribeCommunications = null;
+    }
+}
+
+function closeDialog() {
+    selectedLeadId = "";
+    stopCommunicationSubscription();
+    communicationHistory.replaceChildren();
+    setCommunicationStatus("Select a lead to load its email history.");
+    setLeadFormStatus("");
+    clearEmailEditor();
 
     if (leadDialog.open) {
         leadDialog.close();
     }
 }
 
+function renderCommunicationHistory(snapshot) {
+    communicationHistory.replaceChildren();
 
-function openLead(leadId) {
-    const lead =
-        leads.find(function (item) {
-            return item.id === leadId;
-        });
-
-    if (!lead) {
+    if (snapshot.empty) {
+        setCommunicationStatus("No customer emails have been marked as sent for this lead.");
         return;
     }
 
+    setCommunicationStatus("");
+
+    snapshot.docs.forEach((communicationDocument) => {
+        const communication = communicationDocument.data();
+
+        const item = document.createElement("article");
+        item.className = "crm-communication-item";
+
+        const header = document.createElement("div");
+        header.className = "crm-communication-header";
+
+        const titleWrap = document.createElement("div");
+        const title = document.createElement("h4");
+        const recipient = document.createElement("p");
+
+        title.textContent = communication.subject || "Email";
+        recipient.textContent = `To: ${communication.recipient || "Unknown recipient"}`;
+        titleWrap.append(title, recipient);
+
+        const date = document.createElement("time");
+        date.textContent = formatDateTime(communication.markedSentAt);
+
+        header.append(titleWrap, date);
+
+        const template = document.createElement("span");
+        template.className = "crm-template-badge";
+        template.textContent =
+            emailTemplateLabels[communication.template] || "Custom Message";
+
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        const body = document.createElement("pre");
+
+        summary.textContent = "View email text";
+        body.textContent = communication.body || "";
+
+        details.append(summary, body);
+        item.append(header, template, details);
+        communicationHistory.appendChild(item);
+    });
+}
+
+function subscribeToCommunications(leadId) {
     stopCommunicationSubscription();
+    communicationHistory.replaceChildren();
+    setCommunicationStatus("Loading email history...");
+
+    const communicationsQuery = query(
+        collection(db, "leads", leadId, "communications"),
+        orderBy("markedSentAt", "desc")
+    );
+
+    unsubscribeCommunications = onSnapshot(
+        communicationsQuery,
+        renderCommunicationHistory,
+        (error) => {
+            console.error("Communication history failed:", error);
+            setCommunicationStatus(
+                "Email history could not be loaded. Check your connection and administrator access.",
+                "error"
+            );
+        }
+    );
+}
+
+function openLead(leadId) {
+    const lead = leads.find((item) => item.id === leadId);
+
+    if (!lead) return;
+
     selectedLeadId = lead.id;
 
-    emailTemplate.value = "initial-response";
-    emailSubject.value = "";
-    emailMessage.value = "";
-    setEmailStatus("");
-
-    leadDialogTitle.textContent =
-        lead.name || "Lead details";
+    leadDialogTitle.textContent = lead.name || "Lead details";
 
     setDetailText("detailName", lead.name);
     setDetailText("detailBusiness", lead.business);
@@ -959,46 +635,37 @@ function openLead(leadId) {
     setDetailText("detailPhone", lead.phone);
     setDetailText("detailService", lead.service);
     setDetailText("detailMessage", lead.message);
-    setDetailText(
-        "detailCreatedAt",
-        formatDateTime(lead.createdAt)
-    );
+    setDetailText("detailCreatedAt", formatDateTime(lead.createdAt));
 
-    leadStatus.value =
-        validStatuses.has(lead.status)
-            ? lead.status
-            : "new";
+    leadStatus.value = validStatuses.has(lead.status) ? lead.status : "new";
 
     quoteAmount.value =
-        lead.quoteAmount === null ||
-        lead.quoteAmount === undefined
+        lead.quoteAmount === null || lead.quoteAmount === undefined
             ? ""
             : String(lead.quoteAmount);
 
-    followUpDate.value =
-        lead.followUpDate || "";
+    followUpDate.value = lead.followUpDate || "";
+    internalNotes.value = lead.internalNotes || "";
 
-    internalNotes.value =
-        lead.internalNotes || "";
-
-    const telephone = String(
-        lead.phone || ""
-    ).replace(/[^0-9+]/g, "");
-
+    const telephone = String(lead.phone || "").replace(/[^0-9+]/g, "");
     callLead.hidden = !telephone;
-    callLead.href =
-        telephone ? `tel:${telephone}` : "#";
+    callLead.href = telephone ? `tel:${telephone}` : "#";
 
-    const email = String(
-        lead.email || ""
-    ).trim();
+    const customerEmail = String(lead.email || "").trim();
 
-    emailLead.hidden = !email;
-    emailLead.href = email
-        ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Your SilverForge project request")}`
-        : "#";
+    emailLead.hidden = !isValidEmailAddress(customerEmail);
+    emailRecipient.textContent = customerEmail || "No email provided";
+
+    emailTemplate.value = validEmailTemplates.has(lead.lastEmailTemplate)
+        ? lead.lastEmailTemplate
+        : "initial-response";
+
+    emailSubject.value = String(lead.lastEmailSubject || "");
+    emailMessage.value = String(lead.lastEmailBody || "");
 
     setLeadFormStatus("");
+    setEmailStatus("");
+
     subscribeToCommunications(lead.id);
 
     if (!leadDialog.open) {
@@ -1006,24 +673,16 @@ function openLead(leadId) {
     }
 }
 
-
 async function verifyAdministrator(user) {
-    const roleSnapshot = await getDoc(
-        doc(db, "roles", user.uid)
-    );
+    const roleSnapshot = await getDoc(doc(db, "roles", user.uid));
 
     if (!roleSnapshot.exists()) {
         return false;
     }
 
     const role = roleSnapshot.data();
-
-    return (
-        role.role === "admin" &&
-        role.active === true
-    );
+    return role.role === "admin" && role.active === true;
 }
-
 
 function subscribeToLeads() {
     if (unsubscribeLeads) {
@@ -1034,26 +693,21 @@ function subscribeToLeads() {
 
     unsubscribeLeads = onSnapshot(
         collection(db, "leads"),
-        function (snapshot) {
+        (snapshot) => {
             leads = snapshot.docs
-                .map(function (leadDocument) {
-                    return {
-                        id: leadDocument.id,
-                        ...leadDocument.data()
-                    };
-                })
-                .sort(function (a, b) {
-                    return (
+                .map((leadDocument) => ({
+                    id: leadDocument.id,
+                    ...leadDocument.data()
+                }))
+                .sort(
+                    (a, b) =>
                         timestampToMillis(b.createdAt) -
                         timestampToMillis(a.createdAt)
-                    );
-                });
+                );
 
             if (
                 selectedLeadId &&
-                !leads.some(function (lead) {
-                    return lead.id === selectedLeadId;
-                })
+                !leads.some((lead) => lead.id === selectedLeadId)
             ) {
                 closeDialog();
             }
@@ -1061,11 +715,8 @@ function subscribeToLeads() {
             updateSummary();
             renderLeadList();
         },
-        async function (error) {
-            console.error(
-                "Lead subscription failed:",
-                error
-            );
+        async (error) => {
+            console.error("Lead subscription failed:", error);
 
             setLeadListStatus(
                 "Lead data could not be loaded. Check your administrator access and connection.",
@@ -1080,451 +731,663 @@ function subscribeToLeads() {
     );
 }
 
+function subscribeToAccounts() {
+    if (unsubscribeAccounts) {
+        unsubscribeAccounts();
+    }
+
+    setAccountListStatus("Loading accounts...");
+
+    unsubscribeAccounts = onSnapshot(
+        collection(db, "users"),
+        (snapshot) => {
+            accounts = snapshot.docs
+                .map((accountDocument) => ({
+                    id: accountDocument.id,
+                    ...accountDocument.data()
+                }))
+                .sort(
+                    (a, b) =>
+                        timestampToMillis(b.createdAt) -
+                        timestampToMillis(a.createdAt)
+                );
+
+            populateAccountRoleFilter();
+            renderAccounts();
+        },
+        (error) => {
+            console.error("Account subscription failed:", error);
+
+            accounts = [];
+            createdAccountsCount.textContent = "—";
+            accountResultCount.textContent = "Accounts unavailable";
+            accountTableBody.replaceChildren();
+            accountCardList.replaceChildren();
+
+            if (error.code === "permission-denied") {
+                setAccountListStatus(
+                    "Created accounts exist in Firestore only if your site writes user profiles to the users collection. Your current Firestore rules also need to allow active administrators to list that collection.",
+                    "error"
+                );
+            } else {
+                setAccountListStatus(
+                    "Created accounts could not be loaded. Check the browser console and Firebase connection.",
+                    "error"
+                );
+            }
+        }
+    );
+}
 
 function setLeadFormBusy(isBusy) {
     updateLeadButton.disabled = isBusy;
     deleteLeadButton.disabled = isBusy;
-    updateLeadButton.textContent =
-        isBusy ? "Updating..." : "Update lead";
+    updateLeadButton.textContent = isBusy ? "Updating..." : "Update lead";
 }
 
-
-function setEmailActionsBusy(isBusy) {
+function setEmailBusy(isBusy) {
     generateEmailButton.disabled = isBusy;
     copyEmailButton.disabled = isBusy;
     openEmailButton.disabled = isBusy;
     markEmailSentButton.disabled = isBusy;
-    markEmailSentButton.textContent = isBusy
-        ? "Marking..."
-        : "Mark as Sent";
+    markEmailSentButton.textContent = isBusy ? "Saving..." : "Mark as Sent";
 }
 
+function getCurrentQuote() {
+    const quoteText = quoteAmount.value.trim();
 
-generateEmailButton.addEventListener(
-    "click",
-    function () {
-        const lead = getSelectedLead();
+    if (!quoteText) return null;
 
-        if (!lead) {
-            setEmailStatus(
-                "No lead is selected. Open a lead before generating an email.",
-                "error"
-            );
-            return;
-        }
+    const amount = Number(quoteText);
 
-        const template = emailTemplate.value;
-
-        if (!validEmailTemplates.has(template)) {
-            setEmailStatus(
-                "Choose a valid email template.",
-                "error"
-            );
-            return;
-        }
-
-        const generatedEmail =
-            createEmailFromTemplate(template, lead);
-
-        if (generatedEmail.error) {
-            setEmailStatus(
-                generatedEmail.error,
-                "error"
-            );
-            return;
-        }
-
-        emailSubject.value = generatedEmail.subject;
-        emailMessage.value = generatedEmail.body;
-
-        setEmailStatus(
-            `${emailTemplateLabels[template]} email generated. Review and edit it before opening your email application.`,
-            "success"
-        );
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+        return null;
     }
-);
 
+    return amount;
+}
 
-copyEmailButton.addEventListener(
-    "click",
-    async function () {
-        const draft = validateEmailDraft();
+function getTemplateContent(templateKey, lead) {
+    const firstName = getFirstName(lead.name);
+    const businessName = String(lead.business || "").trim();
+    const service = String(lead.service || "your project").trim();
+    const quote = getCurrentQuote();
+    const businessReference = businessName ? ` for ${businessName}` : "";
 
-        if (draft.error) {
-            setEmailStatus(draft.error, "error");
-            return;
-        }
+    switch (templateKey) {
+        case "initial-response":
+            return {
+                subject: "Thank You for Contacting SilverForge Digital Solutions",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `Thank you for contacting SilverForge Digital Solutions regarding ${service}${businessReference}. I received your project request and will review the information you provided.`,
+                    "",
+                    "I may reach out with a few follow-up questions so I can better understand the project and recommend the right next steps.",
+                    "",
+                    "Thank you for considering SilverForge Digital Solutions.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
 
-        if (
-            !navigator.clipboard ||
-            typeof navigator.clipboard.writeText !== "function"
-        ) {
-            setEmailStatus(
-                "Clipboard access is not available in this browser. Use a secure connection or copy the subject and message manually.",
-                "error"
-            );
-            return;
-        }
+        case "request-information":
+            return {
+                subject: "Additional Information Needed for Your Project",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `Thank you for the information you provided about ${service}${businessReference}. To prepare an accurate plan for the project, I need a few additional details:`,
+                    "",
+                    "• [Add the first question or detail needed]",
+                    "• [Add the second question or detail needed]",
+                    "• [Add any other information needed]",
+                    "",
+                    "You can reply directly to this email with the information when it is convenient.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
 
-        copyEmailButton.disabled = true;
-        copyEmailButton.textContent = "Copying...";
+        case "send-quote":
+            if (quote === null) {
+                throw new Error(
+                    "Enter a valid quote amount before generating the Send Quote email."
+                );
+            }
 
-        try {
-            await navigator.clipboard.writeText(
-                `Subject: ${draft.subject}\n\n${draft.body}`
-            );
+            return {
+                subject: "Your SilverForge Project Quote",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `Thank you for the opportunity to discuss ${service}${businessReference}. Based on the project requirements currently discussed, the quoted project price is ${formatCurrency(quote)}.`,
+                    "",
+                    "This quote is based on the current scope and may be adjusted if the requested features or requirements change.",
+                    "",
+                    "Please review the amount and let me know if you have any questions or would like to discuss the next steps.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
 
-            setEmailStatus(
-                "The email subject and message were copied to the clipboard.",
-                "success"
-            );
-        } catch (error) {
-            console.error("Email copy failed:", error);
-            setEmailStatus(
-                "The email could not be copied. Allow clipboard access or copy the fields manually.",
-                "error"
-            );
-        } finally {
-            copyEmailButton.disabled = false;
-            copyEmailButton.textContent = "Copy Email";
-        }
+        case "follow-up":
+            return {
+                subject: "Following Up on Your SilverForge Project",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `I am following up regarding your request for ${service}${businessReference}. I wanted to see whether you are still interested in moving forward or whether you have any questions I can answer.`,
+                    "",
+                    "Please feel free to reply whenever you are ready.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        case "quote-accepted":
+            return {
+                subject: "SilverForge Project Confirmation",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `Thank you for choosing SilverForge Digital Solutions for ${service}${businessReference}. Your project has been confirmed${quote !== null ? ` at the agreed price of ${formatCurrency(quote)}` : ""}.`,
+                    "",
+                    "I will follow up with the next steps, required materials, and scheduling information so we can begin the project.",
+                    "",
+                    "I appreciate the opportunity to work with you.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        case "request-content":
+            return {
+                subject: "Content Needed for Your SilverForge Project",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `To continue work on ${service}${businessReference}, please provide the project materials listed below:`,
+                    "",
+                    "• Final written text or business information",
+                    "• Logo and brand materials",
+                    "• Photos, videos, or other media",
+                    "• Contact information that should appear in the project",
+                    "• [Add any other required material]",
+                    "",
+                    "For your security, please do not send passwords by email. Account access can be handled through a safer method when necessary.",
+                    "",
+                    "Please let me know if you have questions about any of the requested materials.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        case "progress-update":
+            return {
+                subject: "Update on Your SilverForge Project",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `I am writing with an update on ${service}${businessReference}.`,
+                    "",
+                    "Current progress:",
+                    "[Add a clear description of the work completed or currently underway.]",
+                    "",
+                    "Next steps:",
+                    "[Add the next planned work, review, or information needed.]",
+                    "",
+                    "Please let me know if you have any questions about the update.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        case "project-completed":
+            return {
+                subject: "Your SilverForge Project Is Complete",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    `I am pleased to let you know that ${service}${businessReference} has been completed.`,
+                    "",
+                    "Delivery and next steps:",
+                    "[Add the delivery link, instructions, launch details, or final steps here.]",
+                    "",
+                    "Thank you for working with SilverForge Digital Solutions. Please reach out if you need assistance or future support.",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        case "custom":
+            return {
+                subject: "Message from SilverForge Digital Solutions",
+                body: [
+                    `Hi ${firstName},`,
+                    "",
+                    "[Write your message here.]",
+                    "",
+                    businessSignature
+                ].join("\n")
+            };
+
+        default:
+            throw new Error("Choose a valid email template.");
     }
-);
+}
 
-
-openEmailButton.addEventListener(
-    "click",
-    function () {
-        const draft = validateEmailDraft({
-            requireRecipient: true
-        });
-
-        if (draft.error) {
-            setEmailStatus(draft.error, "error");
-            return;
-        }
-
-        const mailtoLink =
-            `mailto:${encodeURIComponent(draft.recipient)}` +
-            `?subject=${encodeURIComponent(draft.subject)}` +
-            `&body=${encodeURIComponent(draft.body)}`;
-
-        try {
-            const link = document.createElement("a");
-
-            link.href = mailtoLink;
-            link.hidden = true;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            setEmailStatus(
-                "Your email application should open with the message filled in. The CRM has not sent it; review it and press Send in your email application. If no application opens, use Copy Email instead.",
-                "success"
-            );
-        } catch (error) {
-            console.error("Email application failed to open:", error);
-            setEmailStatus(
-                "The email application could not be opened. Use Copy Email and paste the message into your email application.",
-                "error"
-            );
-        }
+async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
     }
-);
 
+    const temporaryTextArea = document.createElement("textarea");
 
-markEmailSentButton.addEventListener(
-    "click",
-    async function () {
-        const draft = validateEmailDraft({
-            requireRecipient: true
-        });
+    temporaryTextArea.value = text;
+    temporaryTextArea.setAttribute("readonly", "");
+    temporaryTextArea.style.position = "fixed";
+    temporaryTextArea.style.opacity = "0";
 
-        if (draft.error) {
-            setEmailStatus(draft.error, "error");
-            return;
-        }
+    document.body.appendChild(temporaryTextArea);
+    temporaryTextArea.select();
 
-        if (!authorizedUid) {
-            setEmailStatus(
-                "Your administrator session could not be verified. Sign in again before recording this email.",
-                "error"
-            );
-            return;
-        }
+    const copied = document.execCommand("copy");
+    temporaryTextArea.remove();
 
-        setEmailActionsBusy(true);
-        setEmailStatus(
-            "Recording the email as sent..."
-        );
-
-        try {
-            const leadReference =
-                doc(db, "leads", draft.lead.id);
-            const communicationReference = doc(
-                collection(
-                    db,
-                    "leads",
-                    draft.lead.id,
-                    "communications"
-                )
-            );
-            const batch = writeBatch(db);
-
-            batch.update(leadReference, {
-                lastEmailTemplate: draft.template,
-                lastEmailSubject: draft.subject,
-                lastEmailBody: draft.body,
-                lastEmailMarkedSentAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            });
-
-            batch.set(communicationReference, {
-                type: "email",
-                template: draft.template,
-                subject: draft.subject,
-                body: draft.body,
-                recipient: draft.recipient,
-                markedSentAt: serverTimestamp(),
-                createdBy: authorizedUid
-            });
-
-            await batch.commit();
-
-            setEmailStatus(
-                "Email marked as sent and added to communication history. This action recorded the email; it did not send it.",
-                "success"
-            );
-        } catch (error) {
-            console.error(
-                "Email sent-status update failed:",
-                error
-            );
-            setEmailStatus(
-                describeFirestoreError(
-                    error,
-                    "Mark as Sent"
-                ),
-                "error"
-            );
-        } finally {
-            setEmailActionsBusy(false);
-        }
+    if (!copied) {
+        throw new Error("Clipboard copy failed.");
     }
-);
+}
 
+function validatePreparedEmail(requireRecipient = false) {
+    const lead = getSelectedLead();
 
-leadSearch.addEventListener(
-    "input",
-    renderLeadList
-);
+    if (!lead) {
+        throw new Error("Select a lead before preparing an email.");
+    }
 
+    const subject = emailSubject.value.trim();
+    const body = emailMessage.value.trim();
+    const recipient = String(lead.email || "").trim();
 
-statusFilter.addEventListener(
-    "change",
-    renderLeadList
-);
+    if (!subject) {
+        throw new Error("Enter an email subject.");
+    }
 
+    if (subject.length > 300) {
+        throw new Error("The email subject is too long.");
+    }
 
-closeLeadDialog.addEventListener(
-    "click",
-    closeDialog
-);
+    if (!body) {
+        throw new Error("Enter an email message.");
+    }
 
+    if (body.length > 20000) {
+        throw new Error("The email message is too long.");
+    }
 
-leadDialog.addEventListener(
-    "cancel",
-    function (event) {
-        event.preventDefault();
+    if (requireRecipient && !isValidEmailAddress(recipient)) {
+        throw new Error("This lead does not have a valid customer email address.");
+    }
+
+    return {
+        lead,
+        subject,
+        body,
+        recipient
+    };
+}
+
+leadSearch.addEventListener("input", renderLeadList);
+statusFilter.addEventListener("change", renderLeadList);
+
+accountSearch.addEventListener("input", renderAccounts);
+accountRoleFilter.addEventListener("change", renderAccounts);
+
+createdAccountsCard.addEventListener("click", () => {
+    accountsSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+});
+
+closeLeadDialog.addEventListener("click", closeDialog);
+
+leadDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialog();
+});
+
+leadDialog.addEventListener("click", (event) => {
+    if (event.target === leadDialog) {
         closeDialog();
     }
-);
+});
 
+emailLead.addEventListener("click", () => {
+    customerEmailSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 
-leadDialog.addEventListener(
-    "click",
-    function (event) {
-        if (event.target === leadDialog) {
-            closeDialog();
-        }
+    emailTemplate.focus();
+});
+
+generateEmailButton.addEventListener("click", () => {
+    const lead = getSelectedLead();
+
+    if (!lead) {
+        setEmailStatus("Select a lead before generating an email.", "error");
+        return;
     }
-);
 
+    const templateKey = emailTemplate.value;
 
-leadForm.addEventListener(
-    "submit",
-    async function (event) {
-        event.preventDefault();
-
-        if (!selectedLeadId) {
-            return;
-        }
-
-        if (!leadForm.checkValidity()) {
-            leadForm.reportValidity();
-            return;
-        }
-
-        const status =
-            leadStatus.value;
-
-        const quoteText =
-            quoteAmount.value.trim();
-
-        const parsedQuote =
-            quoteText ? Number(quoteText) : null;
-
-        if (!validStatuses.has(status)) {
-            setLeadFormStatus(
-                "Choose a valid lead status.",
-                "error"
-            );
-
-            return;
-        }
-
-        if (
-            parsedQuote !== null &&
-            (
-                !Number.isFinite(parsedQuote) ||
-                parsedQuote < 0 ||
-                parsedQuote > 100000000
-            )
-        ) {
-            setLeadFormStatus(
-                "Enter a valid non-negative quote amount.",
-                "error"
-            );
-
-            return;
-        }
-
-        setLeadFormBusy(true);
-        setLeadFormStatus("Updating lead...");
-
-        try {
-            await updateDoc(
-                doc(db, "leads", selectedLeadId),
-                {
-                    status,
-                    quoteAmount: parsedQuote,
-                    followUpDate:
-                        followUpDate.value,
-                    internalNotes:
-                        internalNotes.value.trim(),
-                    updatedAt: serverTimestamp()
-                }
-            );
-
-            setLeadFormStatus(
-                "Lead updated successfully.",
-                "success"
-            );
-        } catch (error) {
-            console.error(
-                "Lead update failed:",
-                error
-            );
-
-            setLeadFormStatus(
-                "The lead could not be updated. Check your connection and access.",
-                "error"
-            );
-        } finally {
-            setLeadFormBusy(false);
-        }
+    if (!validEmailTemplates.has(templateKey)) {
+        setEmailStatus("Choose a valid email template.", "error");
+        return;
     }
-);
 
+    try {
+        const generated = getTemplateContent(templateKey, lead);
 
-deleteLeadButton.addEventListener(
-    "click",
-    async function () {
-        if (!selectedLeadId) {
-            return;
-        }
+        emailSubject.value = generated.subject;
+        emailMessage.value = generated.body;
 
-        const lead =
-            leads.find(function (item) {
-                return item.id === selectedLeadId;
-            });
+        setEmailStatus(
+            "Professional email generated. Review and edit it before opening your email app.",
+            "success"
+        );
+    } catch (error) {
+        setEmailStatus(
+            error.message || "The email could not be generated.",
+            "error"
+        );
+    }
+});
 
-        const confirmed = window.confirm(
-            `Delete the lead for ${lead?.name || "this customer"}? This cannot be undone.`
+copyEmailButton.addEventListener("click", async () => {
+    try {
+        const prepared = validatePreparedEmail(false);
+
+        await copyTextToClipboard(
+            `Subject: ${prepared.subject}\n\n${prepared.body}`
         );
 
-        if (!confirmed) {
-            return;
-        }
+        setEmailStatus(
+            "The email subject and message were copied.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Email copy failed:", error);
 
-        setLeadFormBusy(true);
-        deleteLeadButton.textContent = "Deleting...";
-        setLeadFormStatus("Deleting lead...");
-
-        try {
-            await deleteDoc(
-                doc(db, "leads", selectedLeadId)
-            );
-
-            closeDialog();
-        } catch (error) {
-            console.error(
-                "Lead deletion failed:",
-                error
-            );
-
-            setLeadFormStatus(
-                "The lead could not be deleted. Check your connection and access.",
-                "error"
-            );
-        } finally {
-            deleteLeadButton.textContent =
-                "Delete lead";
-
-            setLeadFormBusy(false);
-        }
+        setEmailStatus(
+            error.message || "The email could not be copied.",
+            "error"
+        );
     }
-);
+});
 
+openEmailButton.addEventListener("click", () => {
+    try {
+        const prepared = validatePreparedEmail(true);
 
-signOutButton.addEventListener(
-    "click",
-    async function () {
-        signOutButton.disabled = true;
-        signOutButton.textContent = "Signing out...";
+        const mailLink =
+            `mailto:${prepared.recipient}` +
+            `?subject=${encodeURIComponent(prepared.subject)}` +
+            `&body=${encodeURIComponent(prepared.body)}`;
 
-        if (unsubscribeLeads) {
-            unsubscribeLeads();
-            unsubscribeLeads = null;
-        }
+        setEmailStatus(
+            "Opening your email app. Review the message there and press Send manually.",
+            "success"
+        );
 
-        stopCommunicationSubscription();
-
-        try {
-            await signOut(auth);
-        } finally {
-            redirectToLogin();
-        }
+        window.location.href = mailLink;
+    } catch (error) {
+        setEmailStatus(
+            error.message || "The email app could not be opened.",
+            "error"
+        );
     }
-);
+});
 
+markEmailSentButton.addEventListener("click", async () => {
+    if (!authorizedUid) {
+        setEmailStatus(
+            "Administrator access could not be confirmed.",
+            "error"
+        );
+        return;
+    }
 
-if (
-    !isFirebaseConfigured ||
-    !auth ||
-    !db
-) {
+    let prepared;
+
+    try {
+        prepared = validatePreparedEmail(true);
+    } catch (error) {
+        setEmailStatus(
+            error.message || "The email record is incomplete.",
+            "error"
+        );
+        return;
+    }
+
+    const templateKey = emailTemplate.value;
+
+    if (!validEmailTemplates.has(templateKey)) {
+        setEmailStatus("Choose a valid email template.", "error");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Mark this email as sent? Use this only after you have sent it from your email app."
+    );
+
+    if (!confirmed) return;
+
+    setEmailBusy(true);
+    setEmailStatus("Saving the email record...");
+
+    try {
+        const leadReference = doc(db, "leads", prepared.lead.id);
+
+        const communicationReference = doc(
+            collection(
+                db,
+                "leads",
+                prepared.lead.id,
+                "communications"
+            )
+        );
+
+        const batch = writeBatch(db);
+
+        batch.update(leadReference, {
+            lastEmailTemplate: templateKey,
+            lastEmailSubject: prepared.subject,
+            lastEmailBody: prepared.body,
+            lastEmailMarkedSentAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        batch.set(communicationReference, {
+            type: "email",
+            template: templateKey,
+            subject: prepared.subject,
+            body: prepared.body,
+            recipient: prepared.recipient,
+            markedSentAt: serverTimestamp(),
+            createdBy: authorizedUid
+        });
+
+        await batch.commit();
+
+        setEmailStatus(
+            "Email marked as sent and added to the private history.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Mark email as sent failed:", error);
+
+        setEmailStatus(
+            "The email record could not be saved. Check your connection and Firestore rules.",
+            "error"
+        );
+    } finally {
+        setEmailBusy(false);
+    }
+});
+
+leadForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!selectedLeadId) return;
+
+    if (!leadForm.checkValidity()) {
+        leadForm.reportValidity();
+        return;
+    }
+
+    const status = leadStatus.value;
+    const quoteText = quoteAmount.value.trim();
+    const parsedQuote = quoteText ? Number(quoteText) : null;
+
+    if (!validStatuses.has(status)) {
+        setLeadFormStatus("Choose a valid lead status.", "error");
+        return;
+    }
+
+    if (
+        parsedQuote !== null &&
+        (
+            !Number.isFinite(parsedQuote) ||
+            parsedQuote < 0 ||
+            parsedQuote > 100000000
+        )
+    ) {
+        setLeadFormStatus(
+            "Enter a valid non-negative quote amount.",
+            "error"
+        );
+        return;
+    }
+
+    setLeadFormBusy(true);
+    setLeadFormStatus("Updating lead...");
+
+    try {
+        await updateDoc(
+            doc(db, "leads", selectedLeadId),
+            {
+                status,
+                quoteAmount: parsedQuote,
+                followUpDate: followUpDate.value,
+                internalNotes: internalNotes.value.trim(),
+                updatedAt: serverTimestamp()
+            }
+        );
+
+        setLeadFormStatus(
+            "Lead updated successfully.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Lead update failed:", error);
+
+        setLeadFormStatus(
+            "The lead could not be updated. Check your connection and access.",
+            "error"
+        );
+    } finally {
+        setLeadFormBusy(false);
+    }
+});
+
+deleteLeadButton.addEventListener("click", async () => {
+    if (!selectedLeadId) return;
+
+    const lead = getSelectedLead();
+
+    const confirmed = window.confirm(
+        `Delete the lead for ${lead?.name || "this customer"} and its email history? This cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    setLeadFormBusy(true);
+    deleteLeadButton.textContent = "Deleting...";
+    setLeadFormStatus("Deleting lead...");
+
+    try {
+        const communicationSnapshot = await getDocs(
+            collection(
+                db,
+                "leads",
+                selectedLeadId,
+                "communications"
+            )
+        );
+
+        const batch = writeBatch(db);
+
+        communicationSnapshot.docs.forEach(
+            (communicationDocument) => {
+                batch.delete(communicationDocument.ref);
+            }
+        );
+
+        batch.delete(doc(db, "leads", selectedLeadId));
+
+        await batch.commit();
+        closeDialog();
+    } catch (error) {
+        console.error("Lead deletion failed:", error);
+
+        setLeadFormStatus(
+            "The lead could not be deleted. Check your connection and access.",
+            "error"
+        );
+    } finally {
+        deleteLeadButton.textContent = "Delete lead";
+        setLeadFormBusy(false);
+    }
+});
+
+signOutButton.addEventListener("click", async () => {
+    signOutButton.disabled = true;
+    signOutButton.textContent = "Signing out...";
+
+    if (unsubscribeLeads) {
+        unsubscribeLeads();
+        unsubscribeLeads = null;
+    }
+
+    if (unsubscribeAccounts) {
+        unsubscribeAccounts();
+        unsubscribeAccounts = null;
+    }
+
+    stopCommunicationSubscription();
+
+    try {
+        await signOut(auth);
+    } finally {
+        redirectToLogin();
+    }
+});
+
+if (!isFirebaseConfigured || !auth || !db) {
     setAccessMessage(
         "Firebase is not configured. Update firebase-config.js before opening the CRM."
     );
 } else {
     onAuthStateChanged(
         auth,
-        async function (user) {
+        async (user) => {
             if (!user) {
-                redirectToLogin(
-                    pendingRedirectReason
-                );
+                redirectToLogin(pendingRedirectReason);
                 return;
             }
 
@@ -1532,18 +1395,13 @@ if (
                 return;
             }
 
-            setAccessMessage(
-                "Verifying administrator access..."
-            );
+            setAccessMessage("Verifying administrator access...");
 
             try {
-                const authorized =
-                    await verifyAdministrator(user);
+                const authorized = await verifyAdministrator(user);
 
                 if (!authorized) {
-                    pendingRedirectReason =
-                        "unauthorized";
-
+                    pendingRedirectReason = "unauthorized";
                     await signOut(auth);
                     return;
                 }
@@ -1556,37 +1414,28 @@ if (
                 crmApp.hidden = false;
 
                 subscribeToLeads();
+                subscribeToAccounts();
             } catch (error) {
-                console.error(
-                    "CRM authorization failed:",
-                    error
-                );
-
-                pendingRedirectReason =
-                    "unauthorized";
-
+                console.error("CRM authorization failed:", error);
+                pendingRedirectReason = "unauthorized";
                 await signOut(auth);
             }
         },
-        function (error) {
-            console.error(
-                "CRM auth observer failed:",
-                error
-            );
-
+        (error) => {
+            console.error("CRM auth observer failed:", error);
             redirectToLogin();
         }
     );
 }
 
-
-window.addEventListener(
-    "beforeunload",
-    function () {
-        if (unsubscribeLeads) {
-            unsubscribeLeads();
-        }
-
-        stopCommunicationSubscription();
+window.addEventListener("beforeunload", () => {
+    if (unsubscribeLeads) {
+        unsubscribeLeads();
     }
-);
+
+    if (unsubscribeAccounts) {
+        unsubscribeAccounts();
+    }
+
+    stopCommunicationSubscription();
+});
