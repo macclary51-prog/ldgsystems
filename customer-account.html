@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>My Account | SilverForge Digital Solutions</title>
+
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="customer-account.css?v=1">
+</head>
+
+<body data-customer-page="account">
+
+  <header class="site-header">
+
+    <div class="container header-content">
+
+      <a
+        class="brand"
+        href="index.html"
+        aria-label="SilverForge Digital Solutions home"
+      >
+        <img
+          class="brand-logo"
+          src="logo.png"
+          alt="SilverForge Digital Solutions logo"
+        >
+      </a>
+
+
+      <button
+        class="menu-button"
+        id="menuButton"
+        type="button"
+        aria-expanded="false"
+        aria-label="Open navigation"
+      >
+        ☰
+      </button>
+
+
+      <nav class="navigation" id="navigation">
+
+        <a href="index.html">
+          Home
+        </a>
+
+        <a href="development.html">
+          Development
+        </a>
+
+        <a href="social-media.html">
+          Social Media
+        </a>
+
+        <a href="portfolio.html">
+          Portfolio
+        </a>
+
+        <a href="downloads.html">
+          Our Apps
+        </a>
+
+        <a href="about.html">
+          About
+        </a>
+
+        <a
+          class="active"
+          href="customer-account.html"
+        >
+          My Account
+        </a>
+
+        <a
+          class="quote-button"
+          href="contact.html"
+        >
+          Request a Quote
+        </a>
+
+      </nav>
+
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <div
+      class="customer-account-gate"
+      id="customerAccountGate"
+      role="status"
+      aria-live="polite"
+    >
+
+      <div
+        class="customer-spinner"
+        aria-hidden="true"
+      ></div>
+
+      <p id="customerAccountGateMessage">
+        Loading your account...
+      </p>
+
+    </div>
+
+
+    <div
+      id="customerAccountApp"
+      hidden
+    >
+
+      <section class="page-hero customer-page-hero">
+
+        <div class="container page-hero-content">
+
+          <span class="eyebrow">
+            SilverForge Client Account
+          </span>
+
+          <h1 id="customerWelcome">
+            My account
+          </h1>
+
+          <p>
+            Manage your SilverForge profile,
+            email verification,
+            and account security.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <section class="section section-dark">
+
+        <div class="container customer-dashboard-grid">
+
+
+          <section class="customer-account-card">
+
+            <div class="customer-card-heading">
+
+              <div>
+
+                <span class="eyebrow">
+                  Profile
+                </span>
+
+                <h2>
+                  Account details
+                </h2>
+
+              </div>
+
+
+              <span
+                class="customer-status-badge"
+                id="verificationBadge"
+              >
+                Checking...
+              </span>
+
+            </div>
+
+
+            <dl class="customer-account-summary">
+
+              <div>
+
+                <dt>
+                  Email
+                </dt>
+
+                <dd id="accountEmail">
+                  —
+                </dd>
+
+              </div>
+
+
+              <div>
+
+                <dt>
+                  Account created
+                </dt>
+
+                <dd id="accountCreatedAt">
+                  —
+                </dd>
+
+              </div>
+
+
+              <div>
+
+                <dt>
+                  Role
+                </dt>
+
+                <dd id="accountRole">
+                  Customer
+                </dd>
+
+              </div>
+
+
+              <div>
+
+                <dt>
+                  Status
+                </dt>
+
+                <dd id="accountStatus">
+                  Active
+                </dd>
+
+              </div>
+
+            </dl>
+
+
+            <form
+              class="contact-form customer-profile-form"
+              id="customerProfileForm"
+            >
+
+              <div class="form-field">
+
+                <label for="accountName">
+                  Your name
+                </label>
+
+                <input
+                  id="accountName"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  maxlength="120"
+                  required
+                >
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="accountBusiness">
+                  Business name
+
+                  <span class="customer-optional">
+                    optional
+                  </span>
+
+                </label>
+
+                <input
+                  id="accountBusiness"
+                  name="business"
+                  type="text"
+                  autocomplete="organization"
+                  maxlength="160"
+                >
+
+              </div>
+
+
+              <button
+                class="submit-button"
+                id="updateProfileButton"
+                type="submit"
+              >
+                Save Profile
+              </button>
+
+
+              <p
+                class="form-message"
+                id="customerProfileStatus"
+                role="status"
+                aria-live="polite"
+              ></p>
+
+            </form>
+
+          </section>
+
+
+          <aside class="customer-account-card customer-security-card">
+
+            <span class="eyebrow">
+              Security
+            </span>
+
+            <h2>
+              Account security
+            </h2>
+
+
+            <div class="customer-security-stack">
+
+
+              <div class="customer-security-item">
+
+                <h3>
+                  Email verification
+                </h3>
+
+                <p id="verificationMessage">
+                  Checking your email verification status...
+                </p>
+
+                <button
+                  class="secondary-button customer-full-button"
+                  id="sendVerificationButton"
+                  type="button"
+                >
+                  Send Verification Email
+                </button>
+
+              </div>
+
+
+              <div class="customer-security-item">
+
+                <h3>
+                  Password
+                </h3>
+
+                <p>
+                  Send a secure Firebase password reset
+                  link to your account email.
+                </p>
+
+                <button
+                  class="secondary-button customer-full-button"
+                  id="accountPasswordResetButton"
+                  type="button"
+                >
+                  Send Password Reset
+                </button>
+
+              </div>
+
+
+              <div class="customer-security-item">
+
+                <h3>
+                  Project request
+                </h3>
+
+                <p>
+                  Ready to start or discuss a project?
+                  Use the SilverForge quote form.
+                </p>
+
+                <a
+                  class="primary-button customer-full-button"
+                  href="contact.html"
+                >
+                  Request a Quote
+                </a>
+
+              </div>
+
+
+              <button
+                class="customer-signout-button"
+                id="customerSignOutButton"
+                type="button"
+              >
+                Sign Out
+              </button>
+
+
+              <p
+                class="form-message"
+                id="customerAccountActionStatus"
+                role="status"
+                aria-live="polite"
+              ></p>
+
+            </div>
+
+          </aside>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <footer>
+
+    <div class="container footer-content">
+
+      <div>
+        © <span data-current-year></span>
+        SilverForge Digital Solutions
+      </div>
+
+
+      <div class="footer-links">
+
+        <a href="support.html">
+          Support
+        </a>
+
+        <a href="privacy.html">
+          Privacy
+        </a>
+
+        <a href="contact.html">
+          Contact
+        </a>
+
+        <a href="customer-account.html">
+          My Account
+        </a>
+
+        <a
+          class="footer-admin-link"
+          href="crm-login.html"
+        >
+          Admin CRM
+        </a>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <script src="script.js"></script>
+
+  <script
+    type="module"
+    src="customer-auth.js?v=1"
+  ></script>
+
+</body>
+</html>
