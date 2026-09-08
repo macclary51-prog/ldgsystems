@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Lead CRM | SilverForge Digital Solutions</title>
-    <link rel="stylesheet" href="crm.css?v=4">
+    <link rel="stylesheet" href="crm.css">
 </head>
 
 <body class="crm-page">
@@ -35,7 +35,7 @@
                 <div>
                     <span class="crm-eyebrow">Private workspace</span>
                     <h1 id="crmTitle">Lead overview</h1>
-                    <p>Review quote requests, follow up with customers, and move projects through the pipeline.</p>
+                    <p>Review quote requests, created accounts, follow-ups, and active projects.</p>
                 </div>
 
                 <div class="crm-live-indicator">
@@ -44,7 +44,7 @@
                 </div>
             </section>
 
-            <section class="crm-summary-grid" aria-label="Lead summary">
+            <section class="crm-summary-grid" aria-label="CRM summary">
                 <article class="crm-summary-card">
                     <span>Total leads</span>
                     <strong id="totalLeads">0</strong>
@@ -74,6 +74,15 @@
                     <span>Completed</span>
                     <strong id="completedProjects">0</strong>
                 </article>
+
+                <button class="crm-summary-card crm-summary-action crm-account-summary"
+                        id="createdAccountsCard"
+                        type="button"
+                        aria-label="Jump to created accounts">
+                    <span>Created accounts</span>
+                    <strong id="createdAccountsCount">0</strong>
+                    <small>View accounts</small>
+                </button>
             </section>
 
             <section class="crm-leads-panel" aria-labelledby="leadListTitle">
@@ -82,7 +91,6 @@
                         <span class="crm-eyebrow">Customer pipeline</span>
                         <h2 id="leadListTitle">Quote requests</h2>
                     </div>
-
                     <span class="crm-result-count" id="leadResultCount">Loading leads...</span>
                 </div>
 
@@ -108,11 +116,52 @@
                     </label>
                 </div>
 
-                <p class="crm-status crm-panel-status" id="leadListStatus" role="status" aria-live="polite">
-                    Loading leads...
-                </p>
-
+                <p class="crm-status crm-panel-status" id="leadListStatus" role="status" aria-live="polite">Loading leads...</p>
                 <div class="crm-lead-list" id="leadList" role="list"></div>
+            </section>
+
+            <section class="crm-leads-panel crm-accounts-panel" id="accountsSection" aria-labelledby="accountListTitle">
+                <div class="crm-panel-heading">
+                    <div>
+                        <span class="crm-eyebrow">Registered users</span>
+                        <h2 id="accountListTitle">Created accounts</h2>
+                    </div>
+                    <span class="crm-result-count" id="accountResultCount">Loading accounts...</span>
+                </div>
+
+                <div class="crm-toolbar crm-account-toolbar">
+                    <label class="crm-field crm-search-field" for="accountSearch">
+                        <span>Search accounts</span>
+                        <input id="accountSearch" type="search" placeholder="Name, email, role, or business ID">
+                    </label>
+
+                    <label class="crm-field crm-filter-field" for="accountRoleFilter">
+                        <span>Filter by role</span>
+                        <select id="accountRoleFilter">
+                            <option value="all">All roles</option>
+                        </select>
+                    </label>
+                </div>
+
+                <p class="crm-status crm-panel-status" id="accountListStatus" role="status" aria-live="polite">Loading accounts...</p>
+
+                <div class="crm-account-table-wrap">
+                    <table class="crm-account-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Business ID</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="crm-account-card-list" id="accountCardList" role="list"></div>
             </section>
         </main>
     </div>
@@ -124,47 +173,33 @@
                     <span class="crm-eyebrow">Lead details</span>
                     <h2 id="leadDialogTitle">Customer request</h2>
                 </div>
-
                 <button class="crm-icon-button" id="closeLeadDialog" type="button" aria-label="Close lead details">&times;</button>
             </header>
 
             <div class="crm-contact-actions">
                 <a class="crm-secondary-button" id="callLead" href="#">Call customer</a>
-                <a class="crm-secondary-button" id="emailLead" href="#">Email customer</a>
+                <button class="crm-secondary-button" id="emailLead" type="button">Prepare email</button>
             </div>
 
             <dl class="crm-detail-grid">
-                <div>
-                    <dt>Customer</dt>
-                    <dd id="detailName">—</dd>
-                </div>
-                <div>
-                    <dt>Business</dt>
-                    <dd id="detailBusiness">—</dd>
-                </div>
-                <div>
-                    <dt>Email</dt>
-                    <dd id="detailEmail">—</dd>
-                </div>
-                <div>
-                    <dt>Phone</dt>
-                    <dd id="detailPhone">—</dd>
-                </div>
-                <div>
-                    <dt>Service</dt>
-                    <dd id="detailService">—</dd>
-                </div>
-                <div>
-                    <dt>Submitted</dt>
-                    <dd id="detailCreatedAt">—</dd>
-                </div>
-                <div class="crm-detail-full">
-                    <dt>Project details</dt>
-                    <dd id="detailMessage">—</dd>
-                </div>
+                <div><dt>Customer</dt><dd id="detailName">—</dd></div>
+                <div><dt>Business</dt><dd id="detailBusiness">—</dd></div>
+                <div><dt>Email</dt><dd id="detailEmail">—</dd></div>
+                <div><dt>Phone</dt><dd id="detailPhone">—</dd></div>
+                <div><dt>Service</dt><dd id="detailService">—</dd></div>
+                <div><dt>Submitted</dt><dd id="detailCreatedAt">—</dd></div>
+                <div class="crm-detail-full"><dt>Project details</dt><dd id="detailMessage">—</dd></div>
             </dl>
 
             <form class="crm-form crm-lead-form" id="leadForm">
+                <div class="crm-section-heading">
+                    <div>
+                        <span class="crm-eyebrow">Private SilverForge information</span>
+                        <h3>Lead management</h3>
+                    </div>
+                    <p>These notes and controls are never included in customer emails.</p>
+                </div>
+
                 <div class="crm-form-grid">
                     <label class="crm-field" for="leadStatus">
                         <span>Status</span>
@@ -196,66 +231,6 @@
                     </label>
                 </div>
 
-                <section class="crm-email-section" aria-labelledby="customerEmailTitle">
-                    <div class="crm-email-heading">
-                        <div>
-                            <span class="crm-eyebrow">Customer communication</span>
-                            <h3 id="customerEmailTitle">Customer Email</h3>
-                        </div>
-
-                        <p>This message will be sent to the customer. Private notes are never included.</p>
-                    </div>
-
-                    <div class="crm-email-compose-grid">
-                        <label class="crm-field" for="emailTemplate">
-                            <span>Email template</span>
-                            <select id="emailTemplate" name="emailTemplate">
-                                <option value="initial-response">Initial Response</option>
-                                <option value="request-more-information">Request More Information</option>
-                                <option value="send-quote">Send Quote</option>
-                                <option value="follow-up">Follow Up</option>
-                                <option value="quote-accepted">Quote Accepted</option>
-                                <option value="request-project-content">Request Project Content</option>
-                                <option value="project-progress-update">Project Progress Update</option>
-                                <option value="project-completed">Project Completed</option>
-                                <option value="custom-message">Custom Message</option>
-                            </select>
-                        </label>
-
-                        <label class="crm-field crm-field-full" for="emailSubject">
-                            <span>Email subject</span>
-                            <input id="emailSubject" name="emailSubject" type="text" maxlength="998" autocomplete="off" placeholder="Enter an email subject">
-                        </label>
-
-                        <label class="crm-field crm-field-full" for="emailMessage">
-                            <span>Email message</span>
-                            <textarea id="emailMessage" name="emailMessage" rows="12" maxlength="20000" spellcheck="true" placeholder="Generate a template or write a custom message"></textarea>
-                        </label>
-                    </div>
-
-                    <div class="crm-email-actions" aria-label="Customer email actions">
-                        <button class="crm-primary-button" id="generateEmailButton" type="button">Generate Email</button>
-                        <button class="crm-secondary-button" id="copyEmailButton" type="button">Copy Email</button>
-                        <button class="crm-secondary-button" id="openEmailButton" type="button">Open Email</button>
-                        <button class="crm-primary-button" id="markEmailSentButton" type="button">Mark as Sent</button>
-                    </div>
-
-                    <p class="crm-status crm-email-status" id="emailStatus" role="status" aria-live="polite"></p>
-
-                    <section class="crm-communication-history" aria-labelledby="communicationHistoryTitle">
-                        <div class="crm-history-heading">
-                            <h4 id="communicationHistoryTitle">Communication history</h4>
-                            <span>Newest first</span>
-                        </div>
-
-                        <p class="crm-status" id="communicationHistoryStatus" role="status" aria-live="polite">
-                            Select a lead to load customer communications.
-                        </p>
-
-                        <div class="crm-communication-list" id="communicationHistoryList"></div>
-                    </section>
-                </section>
-
                 <p class="crm-status" id="leadFormStatus" role="status" aria-live="polite"></p>
 
                 <div class="crm-form-actions">
@@ -263,6 +238,67 @@
                     <button class="crm-danger-button" id="deleteLeadButton" type="button">Delete lead</button>
                 </div>
             </form>
+
+            <section class="crm-customer-email" id="customerEmailSection" aria-labelledby="customerEmailTitle">
+                <div class="crm-section-heading">
+                    <div>
+                        <span class="crm-eyebrow">Customer-facing communication</span>
+                        <h3 id="customerEmailTitle">Customer Email</h3>
+                    </div>
+                    <span class="crm-recipient-badge">To: <strong id="emailRecipient">No email provided</strong></span>
+                </div>
+
+                <div class="crm-email-notice">This message is for the customer. Private internal notes are never included.</div>
+
+                <div class="crm-email-grid">
+                    <label class="crm-field" for="emailTemplate">
+                        <span>Email template</span>
+                        <select id="emailTemplate">
+                            <option value="initial-response">Initial Response</option>
+                            <option value="request-information">Request More Information</option>
+                            <option value="send-quote">Send Quote</option>
+                            <option value="follow-up">Follow Up</option>
+                            <option value="quote-accepted">Quote Accepted</option>
+                            <option value="request-content">Request Project Content</option>
+                            <option value="progress-update">Project Progress Update</option>
+                            <option value="project-completed">Project Completed</option>
+                            <option value="custom">Custom Message</option>
+                        </select>
+                    </label>
+
+                    <button class="crm-secondary-button crm-generate-button" id="generateEmailButton" type="button">Generate Email</button>
+
+                    <label class="crm-field crm-field-full" for="emailSubject">
+                        <span>Email subject</span>
+                        <input id="emailSubject" type="text" maxlength="300" placeholder="Email subject">
+                    </label>
+
+                    <label class="crm-field crm-field-full" for="emailMessage">
+                        <span>Email message</span>
+                        <textarea id="emailMessage" rows="16" maxlength="20000" placeholder="Generate a template or write a custom message."></textarea>
+                    </label>
+                </div>
+
+                <p class="crm-status" id="emailStatus" role="status" aria-live="polite"></p>
+
+                <div class="crm-email-actions">
+                    <button class="crm-secondary-button" id="copyEmailButton" type="button">Copy Email</button>
+                    <button class="crm-primary-button" id="openEmailButton" type="button">Open Email App</button>
+                    <button class="crm-secondary-button" id="markEmailSentButton" type="button">Mark as Sent</button>
+                </div>
+
+                <section class="crm-communication-section" aria-labelledby="communicationHistoryTitle">
+                    <div class="crm-section-heading crm-section-heading-small">
+                        <div>
+                            <span class="crm-eyebrow">Private record</span>
+                            <h3 id="communicationHistoryTitle">Email history</h3>
+                        </div>
+                    </div>
+
+                    <p class="crm-status" id="communicationHistoryStatus" role="status" aria-live="polite">Select a lead to load its email history.</p>
+                    <div class="crm-communication-list" id="communicationHistory"></div>
+                </section>
+            </section>
         </div>
     </dialog>
 
