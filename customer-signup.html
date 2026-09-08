@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>Create Client Account | SilverForge Digital Solutions</title>
+
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="customer-account.css?v=1">
+</head>
+
+<body data-customer-page="signup">
+
+  <header class="site-header">
+    <div class="container header-content">
+
+      <a
+        class="brand"
+        href="index.html"
+        aria-label="SilverForge Digital Solutions home"
+      >
+        <img
+          class="brand-logo"
+          src="logo.png"
+          alt="SilverForge Digital Solutions logo"
+        >
+      </a>
+
+      <button
+        class="menu-button"
+        id="menuButton"
+        type="button"
+        aria-expanded="false"
+        aria-label="Open navigation"
+      >
+        ☰
+      </button>
+
+      <nav class="navigation" id="navigation">
+        <a href="index.html">Home</a>
+        <a href="development.html">Development</a>
+        <a href="social-media.html">Social Media</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="downloads.html">Our Apps</a>
+        <a href="about.html">About</a>
+
+        <a
+          class="active"
+          href="customer-login.html"
+        >
+          Client Account
+        </a>
+
+        <a
+          class="quote-button"
+          href="contact.html"
+        >
+          Request a Quote
+        </a>
+      </nav>
+
+    </div>
+  </header>
+
+
+  <main>
+
+    <section class="page-hero customer-page-hero">
+      <div class="container page-hero-content">
+
+        <span class="eyebrow">
+          SilverForge Client Account
+        </span>
+
+        <h1>Create your account</h1>
+
+        <p>
+          Create a secure SilverForge client profile.
+          Your password is handled by Firebase Authentication
+          and is never stored in Firestore.
+        </p>
+
+      </div>
+    </section>
+
+
+    <section class="section section-dark">
+      <div class="container customer-auth-layout">
+
+        <section class="customer-auth-card">
+
+          <div class="section-heading customer-auth-heading">
+
+            <span class="eyebrow">
+              New client
+            </span>
+
+            <h2>Create Client Account</h2>
+
+            <p>
+              Already registered?
+              <a
+                class="customer-inline-link"
+                href="customer-login.html"
+              >
+                Sign in here
+              </a>.
+            </p>
+
+          </div>
+
+
+          <form
+            class="contact-form customer-auth-form"
+            id="customerSignupForm"
+          >
+
+            <div class="form-row">
+
+              <div class="form-field">
+
+                <label for="signupName">
+                  Your name
+                </label>
+
+                <input
+                  id="signupName"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  maxlength="120"
+                  required
+                >
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="signupBusiness">
+                  Business name
+                  <span class="customer-optional">
+                    optional
+                  </span>
+                </label>
+
+                <input
+                  id="signupBusiness"
+                  name="business"
+                  type="text"
+                  autocomplete="organization"
+                  maxlength="160"
+                >
+
+              </div>
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="signupEmail">
+                Email address
+              </label>
+
+              <input
+                id="signupEmail"
+                name="email"
+                type="email"
+                autocomplete="email"
+                maxlength="254"
+                required
+              >
+
+            </div>
+
+
+            <div class="form-row">
+
+              <div class="form-field">
+
+                <label for="signupPassword">
+                  Password
+                </label>
+
+                <input
+                  id="signupPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  maxlength="128"
+                  required
+                >
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="signupPasswordConfirm">
+                  Confirm password
+                </label>
+
+                <input
+                  id="signupPasswordConfirm"
+                  name="passwordConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  maxlength="128"
+                  required
+                >
+
+              </div>
+
+            </div>
+
+
+            <p class="customer-help-text">
+              Use at least 8 characters.
+              SilverForge cannot see your password.
+            </p>
+
+
+            <button
+              class="submit-button"
+              id="customerSignupButton"
+              type="submit"
+            >
+              Create Account
+            </button>
+
+
+            <p
+              class="form-message"
+              id="customerSignupStatus"
+              role="status"
+              aria-live="polite"
+            ></p>
+
+          </form>
+
+        </section>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <div class="container footer-content">
+
+      <div>
+        © <span data-current-year></span>
+        SilverForge Digital Solutions
+      </div>
+
+      <div class="footer-links">
+
+        <a href="support.html">
+          Support
+        </a>
+
+        <a href="privacy.html">
+          Privacy
+        </a>
+
+        <a href="contact.html">
+          Contact
+        </a>
+
+        <a href="customer-login.html">
+          Client Account
+        </a>
+
+        <a
+          class="footer-admin-link"
+          href="crm-login.html"
+        >
+          Admin CRM
+        </a>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+
+  <script src="script.js"></script>
+
+  <script
+    type="module"
+    src="customer-auth.js?v=1"
+  ></script>
+
+</body>
+</html>
