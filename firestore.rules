@@ -8,66 +8,27 @@ service cloud.firestore {
 
     function isActiveAdmin() {
       return isSignedIn()
-        && exists(
-          /databases/$(database)/documents/roles/$(request.auth.uid)
-        )
-        && get(
-          /databases/$(database)/documents/roles/$(request.auth.uid)
-        ).data.role == "admin"
-        && get(
-          /databases/$(database)/documents/roles/$(request.auth.uid)
-        ).data.active == true;
+        && exists(/databases/$(database)/documents/roles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "admin"
+        && get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.active == true;
     }
 
     function hasExpectedLeadFields(data) {
       return data.keys().hasAll([
-        "name",
-        "business",
-        "email",
-        "phone",
-        "service",
-        "message",
-        "status",
-        "quoteAmount",
-        "followUpDate",
-        "internalNotes",
-        "createdAt",
-        "updatedAt"
+        "name","business","email","phone","service","message","status",
+        "quoteAmount","followUpDate","internalNotes","createdAt","updatedAt"
       ])
       && data.keys().hasOnly([
-        "name",
-        "business",
-        "email",
-        "phone",
-        "service",
-        "message",
-        "status",
-        "quoteAmount",
-        "followUpDate",
-        "internalNotes",
-        "createdAt",
-        "updatedAt",
-        "lastEmailTemplate",
-        "lastEmailSubject",
-        "lastEmailBody",
-        "lastEmailMarkedSentAt"
+        "name","business","email","phone","service","message","status",
+        "quoteAmount","followUpDate","internalNotes","createdAt","updatedAt",
+        "lastEmailTemplate","lastEmailSubject","lastEmailBody","lastEmailMarkedSentAt"
       ]);
     }
 
     function hasOnlyPublicLeadFields(data) {
       return data.keys().hasOnly([
-        "name",
-        "business",
-        "email",
-        "phone",
-        "service",
-        "message",
-        "status",
-        "quoteAmount",
-        "followUpDate",
-        "internalNotes",
-        "createdAt",
-        "updatedAt"
+        "name","business","email","phone","service","message","status",
+        "quoteAmount","followUpDate","internalNotes","createdAt","updatedAt"
       ]);
     }
 
@@ -102,14 +63,8 @@ service cloud.firestore {
     function hasValidAdminFields(data) {
       return data.status is string
         && data.status in [
-          "new",
-          "contacted",
-          "qualified",
-          "quote-sent",
-          "accepted",
-          "in-progress",
-          "completed",
-          "lost"
+          "new","contacted","qualified","quote-sent",
+          "accepted","in-progress","completed","lost"
         ]
         && (
           data.quoteAmount == null
@@ -142,14 +97,14 @@ service cloud.firestore {
           && data.lastEmailTemplate is string
           && data.lastEmailTemplate in [
             "initial-response",
-            "request-more-information",
+            "request-information",
             "send-quote",
             "follow-up",
             "quote-accepted",
-            "request-project-content",
-            "project-progress-update",
+            "request-content",
+            "progress-update",
             "project-completed",
-            "custom-message"
+            "custom"
           ]
           && data.lastEmailSubject is string
           && data.lastEmailSubject.size() > 0
@@ -163,7 +118,6 @@ service cloud.firestore {
 
     function isValidPublicLead() {
       let data = request.resource.data;
-
       return hasExpectedLeadFields(data)
         && hasOnlyPublicLeadFields(data)
         && hasValidCustomerFields(data)
@@ -177,24 +131,18 @@ service cloud.firestore {
 
     function isValidAdminUpdate() {
       let data = request.resource.data;
-
       return hasExpectedLeadFields(data)
         && hasValidCustomerFields(data)
         && hasValidAdminFields(data)
         && hasValidStoredEmailFields(data)
         && data.updatedAt == request.time
         && data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "quoteAmount",
-          "followUpDate",
-          "internalNotes",
-          "updatedAt"
+          "status","quoteAmount","followUpDate","internalNotes","updatedAt"
         ]);
     }
 
     function isValidAdminEmailUpdate() {
       let data = request.resource.data;
-
       return hasExpectedLeadFields(data)
         && hasValidCustomerFields(data)
         && hasValidAdminFields(data)
@@ -202,47 +150,31 @@ service cloud.firestore {
         && data.lastEmailMarkedSentAt == request.time
         && data.updatedAt == request.time
         && data.diff(resource.data).affectedKeys().hasOnly([
-          "lastEmailTemplate",
-          "lastEmailSubject",
-          "lastEmailBody",
-          "lastEmailMarkedSentAt",
-          "updatedAt"
+          "lastEmailTemplate","lastEmailSubject","lastEmailBody",
+          "lastEmailMarkedSentAt","updatedAt"
         ]);
     }
 
     function isValidEmailCommunication() {
       let data = request.resource.data;
-
       return data.keys().hasAll([
-        "type",
-        "template",
-        "subject",
-        "body",
-        "recipient",
-        "markedSentAt",
-        "createdBy"
+        "type","template","subject","body","recipient","markedSentAt","createdBy"
       ])
       && data.keys().hasOnly([
-        "type",
-        "template",
-        "subject",
-        "body",
-        "recipient",
-        "markedSentAt",
-        "createdBy"
+        "type","template","subject","body","recipient","markedSentAt","createdBy"
       ])
       && data.type == "email"
       && data.template is string
       && data.template in [
         "initial-response",
-        "request-more-information",
+        "request-information",
         "send-quote",
         "follow-up",
         "quote-accepted",
-        "request-project-content",
-        "project-progress-update",
+        "request-content",
+        "progress-update",
         "project-completed",
-        "custom-message"
+        "custom"
       ]
       && data.subject is string
       && data.subject.size() > 0
@@ -259,28 +191,88 @@ service cloud.firestore {
       && data.createdBy == request.auth.uid;
     }
 
+    function hasValidCustomerProfileFields(data) {
+      return data.keys().hasAll([
+        "uid","name","business","email","role","status","createdAt","updatedAt"
+      ])
+      && data.keys().hasOnly([
+        "uid","name","business","email","role","status","createdAt","updatedAt"
+      ])
+      && data.uid is string
+      && data.uid.size() > 0
+      && data.name is string
+      && data.name.size() > 0
+      && data.name.size() <= 120
+      && data.business is string
+      && data.business.size() <= 160
+      && data.email is string
+      && data.email.size() > 3
+      && data.email.size() <= 254
+      && data.email.matches("^[^@]+@[^@]+[.][^@]+$")
+      && data.role == "customer"
+      && data.status == "active"
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomerProfileCreate(userUid) {
+      let data = request.resource.data;
+      return isSignedIn()
+        && request.auth.uid == userUid
+        && request.auth.token.email is string
+        && hasValidCustomerProfileFields(data)
+        && data.uid == userUid
+        && data.email == request.auth.token.email
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidCustomerProfileUpdate(userUid) {
+      let data = request.resource.data;
+      return isSignedIn()
+        && request.auth.uid == userUid
+        && hasValidCustomerProfileFields(data)
+        && data.uid == resource.data.uid
+        && data.email == resource.data.email
+        && data.role == resource.data.role
+        && data.status == resource.data.status
+        && data.createdAt == resource.data.createdAt
+        && data.updatedAt == request.time
+        && data.diff(resource.data).affectedKeys().hasOnly([
+          "name","business","updatedAt"
+        ]);
+    }
+
     match /leads/{leadId} {
       allow create: if isValidPublicLead();
       allow get, list: if isActiveAdmin();
       allow update: if isActiveAdmin()
-        && (
-          isValidAdminUpdate()
-          || isValidAdminEmailUpdate()
-        );
+        && (isValidAdminUpdate() || isValidAdminEmailUpdate());
       allow delete: if isActiveAdmin();
 
       match /communications/{communicationId} {
         allow get, list: if isActiveAdmin();
-        allow create: if isActiveAdmin()
-          && isValidEmailCommunication();
+        allow create: if isActiveAdmin() && isValidEmailCommunication();
         allow update, delete: if false;
       }
     }
 
-    match /roles/{userUid} {
-      allow get: if isSignedIn()
-        && request.auth.uid == userUid;
+    match /users/{userUid} {
+      allow create: if isValidCustomerProfileCreate(userUid);
 
+      allow get: if isSignedIn()
+        && (request.auth.uid == userUid || isActiveAdmin());
+
+      allow list: if isActiveAdmin();
+
+      allow update: if isActiveAdmin()
+        || isValidCustomerProfileUpdate(userUid);
+
+      allow delete: if isActiveAdmin();
+    }
+
+    match /roles/{userUid} {
+      allow get: if isSignedIn() && request.auth.uid == userUid;
       allow list, create, update, delete: if false;
     }
 
